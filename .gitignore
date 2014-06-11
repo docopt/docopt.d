@@ -1,3 +1,5 @@
 .dub
+*.exe
 __test*
-
+libdocopt.a
+docopt.lib

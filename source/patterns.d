@@ -250,13 +250,13 @@ package class LeafPattern : Pattern {
     }
 
     override PatternMatch match(Pattern[] left, Pattern[] collected = []) {
-        ulong pos = ulong.max;
+        uint pos = uint.max;
         auto match = singleMatch(left, pos);
 
         if (match is null) {
             return PatternMatch(false, left, collected);
         }
-        assert(pos < ulong.max);
+        assert(pos < uint.max);
 
         Pattern[] left_;
         foreach(item; left[0..pos] ~ left[pos+1..$]) {
@@ -311,7 +311,7 @@ package class LeafPattern : Pattern {
         return new LeafPattern(_name, _value);
     }
 
-    Pattern singleMatch(in Pattern[] left, ref ulong pos) {
+    Pattern singleMatch(in Pattern[] left, ref uint pos) {
         return null;
     }
 }
@@ -361,14 +361,14 @@ package class Option : LeafPattern {
         return new Option(_shortArg, _longArg, _argCount, _value);
     }
 
-    override Pattern singleMatch(in Pattern[] left, ref ulong pos) {
-        foreach (i, pat; left) {
+    override Pattern singleMatch(in Pattern[] left, ref uint pos) {
+        foreach (uint i, pat; left) {
             if (name == pat.name) {
                 pos = i;
                 return pat.dup;
             }
         }
-        pos = ulong.max;
+        pos = uint.max;
         return null;
     }
 }
@@ -459,14 +459,14 @@ package class Argument : LeafPattern {
         super(name, new ArgValue(value));
     }
 
-    override Pattern singleMatch(in Pattern[] left, ref ulong pos) {
+    override Pattern singleMatch(in Pattern[] left, ref uint pos) {
         foreach(i, pattern; left) {
             if (typeid(pattern) == typeid(Argument)) {
                 pos = i;
                 return new Argument(name, pattern.value);
             }
         }
-        pos = ulong.max;
+        pos = uint.max;
         return null;
     }
     override string toString() {
@@ -489,7 +489,7 @@ package class Command : Argument {
     this(string source) {
         super(source, new ArgValue("false"));
     }
-    override Pattern singleMatch(in Pattern[] left, ref ulong pos) {
+    override Pattern singleMatch(in Pattern[] left, ref uint pos) {
         foreach(i, pattern; left) {
             if (typeid(pattern) == typeid(Argument)) {
                 if (pattern.value.toString == name) {
@@ -500,7 +500,7 @@ package class Command : Argument {
                 }
             }
         }
-        pos = ulong.max;
+        pos = uint.max;
         return null;
     }
     override string toString() {
@@ -647,7 +647,7 @@ package class Either : BranchPattern {
             }
         }
         if (outcomes.length > 0) {
-            auto minLeft = ulong.max;
+            auto minLeft = uint.max;
             foreach (m; outcomes) {
                 if (m.left.length < minLeft) {
                     minLeft = m.left.length;
