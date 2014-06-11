@@ -3,3 +3,5 @@
 __test*
 libdocopt.a
 docopt.lib
+Debug
+Release
