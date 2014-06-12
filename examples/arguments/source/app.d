@@ -25,6 +25,7 @@ int main(string[] args) {
 
 ";
 
-    docopt.docopt(doc, args[1..$]);
+    auto arguments = docopt.docopt(doc, args[1..$], true, "0.3.0");
+    writeln(arguments);
     return 0;
 }

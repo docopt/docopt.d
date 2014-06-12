@@ -122,6 +122,7 @@ package abstract class Pattern {
                             string[] temp;
                             child.setValue(new ArgValue(temp));
                         } else if (child.value.isString) {
+                            writeln("can we get here?");
                             writeln("need to split string into list");
                             assert(false);
                         }
@@ -277,9 +278,7 @@ package class LeafPattern : Pattern {
                     left = left_;
                     return true;
                 } else {
-                    ArgValue oldVal = match.value;
-                    oldVal.add(increment);
-                    sameName[0].setValue(oldVal);
+                    sameName[0].value.add(increment);
                 }
             }
 
@@ -345,6 +344,14 @@ package class Option : LeafPattern {
         }
 
         return format("Option(%s, %s, %s, %s)", s, l, _argCount, _value);
+    }
+
+    string toSimpleString() {
+        if (_longArg != null) {
+            return _longArg;
+        } else {
+            return _shortArg;
+        }
     }
 
     override Pattern singleMatch(Pattern[] left, ref uint pos) {

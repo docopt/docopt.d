@@ -7,10 +7,41 @@ import std.container;
 import std.traits;
 import std.ascii;
 import std.conv;
+import std.c.stdlib;
 
 import argvalue;
 import patterns;
 import tokens;
+
+class DocoptLanguageError : Exception {
+    this(string message, string file = __FILE__, size_t line = __LINE__) {
+        super(message, file, line);
+    }
+}
+
+class DocoptArgumentError : Exception {
+    this(string message, string file = __FILE__, size_t line = __LINE__) {
+        super(message, file, line);
+    }
+}
+
+class TokensOptionError : Exception {
+    this(string message, string file = __FILE__, size_t line = __LINE__) {
+        super(message, file, line);
+    }
+}
+
+class DocoptExitHelp : Exception {
+    this(string message, string file = __FILE__, size_t line = __LINE__) {
+        super(message, file, line);
+    }
+}
+
+class DocoptExitVersion : Exception {
+    this(string message, string file = __FILE__, size_t line = __LINE__) {
+        super(message, file, line);
+    }
+}
 
 private Option parseOption(string optionDescription) {
     string shortArg = null;
@@ -44,7 +75,7 @@ private Option parseOption(string optionDescription) {
     }
 
     if (value is null) {
-        return new Option(shortArg, longArg, argCount, new ArgValue("false"));
+        return new Option(shortArg, longArg, argCount, new ArgValue(false));
     } else {
         return new Option(shortArg, longArg, argCount, new ArgValue(value));
     }
@@ -118,8 +149,8 @@ private Pattern[] parseLong(Tokens tokens, ref Option[] options) {
     Option o;
 
     if (similar.length > 1) {
-        writeln(format("%s is not a unique prefix: %s?", longArg, similar));
-        assert(false);
+        auto msg = format("%s is not a unique prefix: %s?", longArg, similar);
+        throw new TokensOptionError(msg);
     } else if (similar.length < 1) {
         uint argCount = 0;
         if (parts.length > 1) {
@@ -128,9 +159,9 @@ private Pattern[] parseLong(Tokens tokens, ref Option[] options) {
         o = new Option(null, longArg, argCount);
         options = options ~ o;
 
-        if (tokens._error == "DocoptExit") {
+        if (tokens.isParsingArgv) {
             if (value == null) {
-                o = new Option(null, longArg, argCount, new ArgValue("true"));
+                o = new Option(null, longArg, argCount, new ArgValue(true));
             } else {
                 o = new Option(null, longArg, argCount, new ArgValue(value));
             }
@@ -139,21 +170,21 @@ private Pattern[] parseLong(Tokens tokens, ref Option[] options) {
         o = new Option(similar[0]._shortArg, similar[0]._longArg, similar[0]._argCount, similar[0]._value);
         if (o._argCount == 0) {
             if (value != null) {
-                writeln(format("%s must not have an argument.", o._longArg));
-                assert(false);
+                auto msg = format("%s must not have an argument.", o._longArg); 
+                throw new TokensOptionError(msg);
             }
         } else {
             if (value == null) {
                 if (tokens.current() == null || tokens.current() == "--") {
-                    writeln(format("%s requires argument.", o._longArg));
-                    assert(false);
+                    auto msg = format("%s requires argument.", o._longArg);
+                    throw new TokensOptionError(msg);
                 }
                 value = tokens.move();
             }
         }
-        if (tokens._error == "DocoptExit") {
+        if (tokens.isParsingArgv) {
             if (value == null) {
-                o.setValue(new ArgValue("true"));
+                o.setValue(new ArgValue(true));
             } else {
                 o.setValue(new ArgValue(value));
             }
@@ -180,13 +211,13 @@ private Pattern[] parseShort(Tokens tokens, ref Option[] options) {
         }
         Option o;
         if (similar.length > 1) {
-            writeln(format("%s is specified ambiguously %d times", shortArg, similar.length));
-            assert(false);
+            string msg = format("%s is specified ambiguously %d times", shortArg, similar.length);
+            throw new TokensOptionError(msg);
         } else if (similar.length < 1) {
             o = new Option(shortArg, null, 0);
             options ~= o;
-            if (tokens._error == "DocoptExit") {
-                o = new Option(shortArg, null, 0, new ArgValue("true"));
+            if (tokens.isParsingArgv) {
+                o = new Option(shortArg, null, 0, new ArgValue(true));
             }
         } else {
             o = new Option(shortArg, similar[0]._longArg, similar[0]._argCount, similar[0]._value);
@@ -194,8 +225,8 @@ private Pattern[] parseShort(Tokens tokens, ref Option[] options) {
             if (o._argCount != 0) {
                 if (left == "") {
                     if (tokens.current == null || tokens.current == "--") {
-                        writeln(format("%s requires an argument", shortArg));
-                        assert(false);
+                        string msg = format("%s requires an argument", shortArg);
+                        throw new TokensOptionError(msg);
                     }
                     value = tokens.move();
                 } else {
@@ -203,9 +234,9 @@ private Pattern[] parseShort(Tokens tokens, ref Option[] options) {
                     left = "";
                 }
             }
-            if (tokens._error == "DocoptExit") {
+            if (tokens.isParsingArgv) {
                 if (value == null) {
-                    o.setValue(new ArgValue("true"));
+                    o.setValue(new ArgValue(true));
                 } else {
                     o.setValue(new ArgValue(value));
                 }
@@ -218,11 +249,11 @@ private Pattern[] parseShort(Tokens tokens, ref Option[] options) {
 }
 
 private Pattern parsePattern(string source, ref Option[] options) {
-    auto tokens = new Tokens(source, "DocoptLanguageError");
+    auto tokens = new Tokens(source, false);
     Pattern[] result = parseExpr(tokens, options);
     if (tokens.current() != null) {
-        writeln("unexpected ending: %s", tokens.toString());
-        assert(false);
+        string msg = format("unexpected ending: %s", tokens.toString());
+        throw new DocoptLanguageError(msg);
     }
     return new Required(result);
 }
@@ -337,32 +368,25 @@ private Pattern[] parseArgv(Tokens tokens, ref Option[] options, bool optionsFir
     return parsed;
 }
 
-private Pattern[] subSetOptions(in Pattern[] docOptions, in Pattern[] patternOptions) {
-    writeln("LeafPattern::match incomplete");
-    assert(false);
-}
 
-private bool checkHelp(bool help, string vers, Pattern[] args, string doc) {
+private void extras(bool help, string vers, Pattern[] args) {
     if (help) {
         foreach(opt; args) {
             if ( (opt.name == "-h" || opt.name == "--help") && opt.value !is null) {
-                writeln(doc);
-                return true;
+                throw new DocoptExitHelp("help");
             }
         }
     }
     if (vers != null) {
         foreach(opt; args) {
             if ( opt.name == "--version" && opt.value !is null) {
-                writeln(vers);
-                return true;
+                throw new DocoptExitVersion("version");
             }
         }
     }
-    return false;
 }
 
-public ArgValue[string] docopt(string doc, string[] argv,
+private ArgValue[string] parse(string doc, string[] argv,
                                bool help = false,
                                string vers = null,
                                bool optionsFirst = false) {
@@ -370,65 +394,86 @@ public ArgValue[string] docopt(string doc, string[] argv,
 
     auto usageSections = parseSection("usage:", doc);
     if (usageSections.length == 0) {
-        writeln("'usage:' (case-insensitive) not found.");
-        return dict;
+        throw new DocoptLanguageError("'usage:' (case-insensitive) not found.");
     }
     if (usageSections.length > 1) {
-        writeln("More than one 'usage:' (case-insensitive)");
-        return dict;
+        throw new DocoptLanguageError("More than one 'usage:' (case-insensitive)");
     }
-
     auto usageMsg = usageSections[0];
-
-    //writeln("---- usage --------");
-    //writeln(usageMsg);
-
-    auto options = parseDefaults(doc);
-
     auto formal = formalUsage(usageMsg);
 
-    auto pattern = parsePattern(formal, options);
+    Pattern pattern;
+    Option[] options;
+    try {
+        options = parseDefaults(doc);
+        pattern = parsePattern(formal, options);
+    } catch(TokensOptionError e) {
+        throw new DocoptLanguageError(e.msg);
+    }
 
-    //writeln("---- options --------");
-    //writeln(options);
-
-    //writeln("----- pattern -------");
-    //writeln(pattern);
-
-    auto args = parseArgv(new Tokens(argv), options, optionsFirst);
-    //writeln("----  args  --------");
-    //writeln(new Tokens(argv));
-    //writeln(args);
+    Pattern[] args;
+    try {
+        args = parseArgv(new Tokens(argv), options, optionsFirst);
+    } catch(TokensOptionError e) {
+        throw new DocoptArgumentError(e.msg);
+    }
 
     auto patternOptions = pattern.flat([typeid(Option).toString]);
-    //writeln("----  patternOptions  --------");
-    //writeln(patternOptions);
 
-    foreach(ref shortcut; pattern.flat([typeid(OptionsShortcut).toString])) {
-        auto docOptions = parseDefaults(doc);
-        shortcut.setChildren(subSetOptions(docOptions, patternOptions));
-    }
+    //foreach(ref shortcut; pattern.flat([typeid(OptionsShortcut).toString])) {
+    //    auto docOptions = parseDefaults(doc);
+    //    shortcut.setChildren(subSetOptions(docOptions, patternOptions));
+    //}
 
-    if (checkHelp(help, vers, args, doc)) {
-        writeln("checking help");
-    } else {
-        Pattern[] collected;
-        bool match = pattern.fix().match(args, collected);
+    extras(help, vers, args);
 
-        if (match && args.length == 0) {
-            auto fin = pattern.flat() ~ collected;
-            foreach(key; fin) {
-                dict[key.name] = key.value;
-            }
-            writeln(dict);
-        } else {
-            writeln(match);
-            writeln(args);
-            writeln(collected);
-            writeln("DANG");
+    Pattern[] collected;
+    bool match = pattern.fix().match(args, collected);
+
+    if (match && args.length == 0) {
+        auto fin = pattern.flat() ~ collected;
+        foreach(key; fin) {
+            dict[key.name] = key.value;
         }
+        return dict;
+    } 
+    
+    if (match) {
+        string[] msg;
+        foreach(a; args) {
+            msg ~= (cast(Option)a).toSimpleString;
+        }
+        throw new DocoptArgumentError(format("Unexpected arguments: %s", join(msg, ", ")));
     }
-    return dict;
+
+    throw new DocoptArgumentError("Arguments did not match");
+    assert(0);
+}
+
+public ArgValue[string] docopt(string doc, string[] argv,
+                               bool help = false,
+                               string vers = null,
+                               bool optionsFirst = false)
+{
+    try {
+        return parse(doc, argv, help, vers, optionsFirst);
+    } catch(DocoptExitHelp) {
+        writeln(doc);
+        exit(0);
+    } catch(DocoptExitVersion) {
+        writeln(vers);
+        exit(0);
+    } catch(DocoptLanguageError e) {
+        writeln("docopt usage string parse failure");
+        writeln(e.msg);
+        exit(-1);
+    } catch(DocoptArgumentError e) {
+        writeln(e.msg);
+        writeln();
+        writeln(doc);
+        exit(-1);
+    }
+    assert(0);
 }
 
 unittest {
@@ -476,6 +521,6 @@ auto doc2 =
 
 ";
 
-    string argv2[3] = ["-r", "-v", "foo.txt"];
+    string argv2[4] = ["-r", "-v", "foo.txt", "bar.txt"];
     auto res = docopt(doc2, argv2, true, "0.1.0");
 }

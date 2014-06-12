@@ -4,12 +4,12 @@ import std.array;
 
 package class Tokens {
     string[] _list;
-    string _error;
-    this(string[] source, string err="DocoptExit") {
+    bool _isParsingArgv;
+    this(string[] source, bool parsingArgv = true) {
         _list ~= source;
-        _error = err;
+        _isParsingArgv = parsingArgv;
     }
-    this(string source, string err="DocoptError") {
+    this(string source, bool parsingArgv = true) {
         auto pat = regex(r"([\[\]\(\)\|]|\.\.\.)");
         string newSource = replaceAll(source, pat, r" $1 ");
         auto splitPat = regex(r"\s+|(\S*<.*?>)");
@@ -24,8 +24,14 @@ package class Tokens {
                 _list ~= match[i][1];
             }
         }
-        _error = err;
+        _isParsingArgv = parsingArgv;
     }
+
+    @property
+    bool isParsingArgv() {
+        return _isParsingArgv;
+    }
+
     string move() {
         if (_list.length > 0) {
             string res = _list[0].dup;
@@ -43,7 +49,6 @@ package class Tokens {
         }
     }
 
-    // TODO remove these eventually
     override string toString() {
         string result = "[";
         result ~= join(_list, ", ");
