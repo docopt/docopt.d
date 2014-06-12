@@ -380,8 +380,8 @@ public ArgValue[string] docopt(string doc, string[] argv,
 
     auto usageMsg = usageSections[0];
 
-    writeln("---- usage --------");
-    writeln(usageMsg);
+    //writeln("---- usage --------");
+    //writeln(usageMsg);
 
     auto options = parseDefaults(doc);
 
@@ -389,20 +389,20 @@ public ArgValue[string] docopt(string doc, string[] argv,
 
     auto pattern = parsePattern(formal, options);
 
-    writeln("---- options --------");
-    writeln(options);
+    //writeln("---- options --------");
+    //writeln(options);
 
-    writeln("----- pattern -------");
-    writeln(pattern);
+    //writeln("----- pattern -------");
+    //writeln(pattern);
 
     auto args = parseArgv(new Tokens(argv), options, optionsFirst);
-    writeln("----  args  --------");
-    writeln(new Tokens(argv));
-    writeln(args);
+    //writeln("----  args  --------");
+    //writeln(new Tokens(argv));
+    //writeln(args);
 
     auto patternOptions = pattern.flat([typeid(Option).toString]);
-    writeln("----  patternOptions  --------");
-    writeln(patternOptions);
+    //writeln("----  patternOptions  --------");
+    //writeln(patternOptions);
 
     foreach(ref shortcut; pattern.flat([typeid(OptionsShortcut).toString])) {
         auto docOptions = parseDefaults(doc);
@@ -412,19 +412,19 @@ public ArgValue[string] docopt(string doc, string[] argv,
     if (checkHelp(help, vers, args, doc)) {
         writeln("checking help");
     } else {
-        writeln("------ matching --------");
-        PatternMatch match = pattern.fix().match(args);
-        if (match.status && match.left.length == 0) {
-            writeln("YAY");
-            auto fin = pattern.flat() ~ match.collected;
+        Pattern[] collected;
+        bool match = pattern.fix().match(args, collected);
+
+        if (match && args.length == 0) {
+            auto fin = pattern.flat() ~ collected;
             foreach(key; fin) {
                 dict[key.name] = key.value;
             }
             writeln(dict);
         } else {
-            writeln(match.status);
-            writeln(match.left);
-            writeln(match.collected);
+            writeln(match);
+            writeln(args);
+            writeln(collected);
             writeln("DANG");
         }
     }

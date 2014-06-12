@@ -7,6 +7,7 @@ import std.container;
 import std.traits;
 import std.ascii;
 import std.conv;
+import std.c.stdlib;
 
 import argvalue;
 
@@ -14,17 +15,14 @@ package struct PatternMatch {
     bool status;
     Pattern[] left;
     Pattern[] collected;
-    this(bool s, in Pattern[] l, in Pattern[] c) {
+    this(bool s, Pattern[] l, Pattern[] c) {
         status = s;
         foreach(pat; l) {
-            left ~= pat.dup;
+            left ~= pat;
         }
         foreach(pat; c) {
-            collected ~= pat.dup;
+            collected ~= pat;
         }
-    }
-    PatternMatch dup() {
-        return PatternMatch(status, left, collected);
     }
 }
 
@@ -45,34 +43,25 @@ package abstract class Pattern {
         return null;
     }
 
-    const Pattern[] children() {
-        return null;
-    }
-
     const string name() {
         writeln("should never reach Pattern::name");
         return null;
     }
 
-    const ArgValue value() {
+    ArgValue value() {
         writeln("should never reach Pattern::value");
         return null;
     }
 
-    void setName(in string name) {
+    void setName(string name) {
         writeln("should never reach Pattern::setName");
     }
 
-    void setValue(in ArgValue value) {
+    void setValue(ArgValue value) {
         writeln("should never reach Pattern::setValue");
     }
 
-    void setChildren(in Pattern[] children) {
-        writeln("should never reach Pattern::dup");
-        assert(false);
-    }
-
-    const Pattern dup() {
+    void setChildren(Pattern[] children) {
         writeln("should never reach Pattern::dup");
         assert(false);
     }
@@ -82,7 +71,7 @@ package abstract class Pattern {
         assert(false);
     }
 
-    PatternMatch match(Pattern[] left, Pattern[] collected = []) {
+    bool match(ref Pattern[] left, ref Pattern[] collected) {
         writeln("should never reach Pattern::match");
         assert(false);
     }
@@ -122,25 +111,23 @@ package abstract class Pattern {
                 foreach(c; child.children) {
                     temp ~= c;
                 }
-                either ~= temp.dup;
+                either ~= temp;
             }
         }
-        writeln("------ either -------");
-        writeln(either);
-        writeln(either.length);
         foreach(item; either) {
-            writeln("case ", item);
             foreach(i, child; item) {
                 if (count(item, child) > 1) {
-                    writeln(format("%d %s", i, child));
-                    writeln("fixing repeater");
                     if (typeid(child) == typeid(Argument) || (typeid(child) == typeid(Option) && (cast(Option)child)._argCount==0)) {
-                        writeln("we have a list?, what to do");
-                        writeln(child);
-                        assert(false);
+                        if (child.value.isNull) {
+                            string[] temp;
+                            child.setValue(new ArgValue(temp));
+                        } else if (child.value.isString) {
+                            writeln("need to split string into list");
+                            assert(false);
+                        }
                     }
                     if (typeid(child) == typeid(Command) || (typeid(child) == typeid(Option) && (cast(Option)child)._argCount==0)) {
-                        child.setValue(new ArgValue("0"));
+                        child.setValue(new ArgValue(0));
                     }
                 }
             }
@@ -185,9 +172,7 @@ private Pattern transform(Pattern pattern) {
                 }
             }
             else if (typeid(child) == typeid(OneOrMore)) {
-                writeln("one or more", child);
                 groups ~= child.children ~ child.children ~ children;
-                writeln(groups);
             }
             else {
                 groups ~= child.children ~ children;
@@ -200,10 +185,7 @@ private Pattern transform(Pattern pattern) {
     foreach(e; result) {
         required ~= new Required(e);
     }
-    writeln("-----------  transform ----------");
-    Pattern res = new Either(required);
-    writeln(res);
-    return res;
+    return new Either(required);
 }
 
 
@@ -222,15 +204,15 @@ package class LeafPattern : Pattern {
         return _name;
     }
 
-    override const ArgValue value() {
-        return _value.dup;
+    override ArgValue value() {
+        return _value;
     }
 
-    override void setName(in string name) {
-        _name = name.dup;
+    override void setName(string name) {
+        _name = name;
     }
 
-    override void setValue(in ArgValue value) {
+    override void setValue(ArgValue value) {
         if (value !is null) {
             _value = value.dup;
         } else {
@@ -249,36 +231,35 @@ package class LeafPattern : Pattern {
         return [];
     }
 
-    override PatternMatch match(Pattern[] left, Pattern[] collected = []) {
+    override bool match(ref Pattern[] left, ref Pattern[] collected) {
         uint pos = uint.max;
         auto match = singleMatch(left, pos);
 
         if (match is null) {
-            return PatternMatch(false, left, collected);
+            return false;
         }
         assert(pos < uint.max);
 
-        Pattern[] left_;
-        foreach(item; left[0..pos] ~ left[pos+1..$]) {
-            left_ ~= item.dup;
-        }
+        Pattern[] left_ = left[0..pos] ~ left[pos+1..$];
 
         Pattern[] sameName;
         foreach(item; collected) {
             if (item.name == name) {
-                sameName ~= item.dup;
+                sameName ~= item;
             }
         }
 
         if (_value.isInt || _value.isList) {
             if (_value.isInt) {
                 if (sameName.length == 0) {
-                    match.setValue(new ArgValue("1"));
-                    return PatternMatch(true, left_, collected ~ match);
+                    match.setValue(new ArgValue(1));
+                    collected ~= match;
+                    left = left;
+                    return true;
                 } else {
                     ArgValue oldVal = match.value;
                     oldVal.add(1);
-                    match.setValue(oldVal);
+                    sameName[0].setValue(oldVal);
                 }
             }
 
@@ -288,30 +269,30 @@ package class LeafPattern : Pattern {
                 if (match.value.isString) {
                     increment = [match.value.toString];
                 } else {
-                    increment = match.value.value.dup;
+                    increment = match.value.asList;
                 }
                 if (sameName.length == 0) {
                     match.setValue(new ArgValue(increment));
-                    return PatternMatch(true, left_, collected ~ match);
+                    collected ~= match;
+                    left = left_;
+                    return true;
                 } else {
                     ArgValue oldVal = match.value;
                     oldVal.add(increment);
-                    match.setValue(oldVal);
+                    sameName[0].setValue(oldVal);
                 }
             }
 
-            return PatternMatch(true, left_, collected);
+            left = left_;
+            return true;
         }
 
-        auto c = collected ~ match;
-        return PatternMatch(true, left_, c);
+        collected ~= match;
+        left = left_;
+        return true;
     }
 
-    override const Pattern dup() {
-        return new LeafPattern(_name, _value);
-    }
-
-    Pattern singleMatch(in Pattern[] left, ref uint pos) {
+    Pattern singleMatch(Pattern[] left, ref uint pos) {
         return null;
     }
 }
@@ -321,7 +302,7 @@ package class Option : LeafPattern {
     string _longArg;
     uint _argCount;
     ArgValue _value;
-    this(in string s, in string l, in uint ac=0, in ArgValue v = new ArgValue("false") ) {
+    this(in string s, in string l, in uint ac=0, in ArgValue v = new ArgValue(false) ) {
         if (l != null) {
             super(l, v);
         } else {
@@ -341,31 +322,36 @@ package class Option : LeafPattern {
         }
     }
 
-    override const ArgValue value() {
-        return _value.dup;
+    override ArgValue value() {
+        return _value;
     }
 
-    override void setName(in string name) {
-        _name = name.dup ;
+    override void setName(string name) {
+        _name = name;
     }
 
-    override void setValue(in ArgValue value) {
-        _value = value.dup;
+    override void setValue(ArgValue value) {
+        _value = value;
     }
 
     override string toString() {
-        return format("Option(%s, %s, %s, %s)", _shortArg, _longArg, _argCount, _value);
+        string s = "None";
+        if (_shortArg != null) {
+            s = format("'%s'", _shortArg);
+        }
+        string l = "None";
+        if (_longArg != null) {
+            l = format("'%s'", _longArg);
+        }
+
+        return format("Option(%s, %s, %s, %s)", s, l, _argCount, _value);
     }
 
-    override const Option dup() {
-        return new Option(_shortArg, _longArg, _argCount, _value);
-    }
-
-    override Pattern singleMatch(in Pattern[] left, ref uint pos) {
+    override Pattern singleMatch(Pattern[] left, ref uint pos) {
         foreach (uint i, pat; left) {
             if (name == pat.name) {
                 pos = i;
-                return pat.dup;
+                return pat;
             }
         }
         pos = uint.max;
@@ -379,29 +365,16 @@ package class BranchPattern : Pattern {
     protected this() {
     }
 
-    this(in Pattern[] children) {
-        foreach(child; children) {
-            _children ~= child.dup;
-        }
+    this(Pattern[] children) {
+        _children = children;
     }
 
     override Pattern[] children() {
         return _children;
     }
 
-    override const Pattern[] children() {
-        Pattern[] res;
-        foreach(child; _children) {
-            res ~= child.dup;
-        }
-        return res;
-    }
-
-    override void setChildren(in Pattern[] children) {
-        _children.clear();
-        foreach(child; children) {
-            _children ~= child.dup;
-        }
+    override void setChildren(Pattern[] children) {
+        _children = children;
     }
 
     override string toString() {
@@ -423,16 +396,21 @@ package class BranchPattern : Pattern {
         return res;
     }
 
-    override const Pattern dup() {
-        return new BranchPattern(_children);
-    }
+    //override const Pattern dup() {
+    //    return new BranchPattern(_children);
+    //}
 }
 
+// TODO remove first match
 private Pattern[] removeChild(Pattern[] arr, Pattern child) {
     Pattern[] result;
+    bool found = false;
     foreach(pat; arr) {
-        if(pat != child) {
-            result ~= pat.dup;
+        if(found || pat != child) {
+            result ~= pat;
+        }
+        if (pat == child) {
+            found = true;
         }
     }
     return result;
@@ -459,7 +437,7 @@ package class Argument : LeafPattern {
         super(name, new ArgValue(value));
     }
 
-    override Pattern singleMatch(in Pattern[] left, ref uint pos) {
+    override Pattern singleMatch(Pattern[] left, ref uint pos) {
         foreach(i, pattern; left) {
             if (typeid(pattern) == typeid(Argument)) {
                 pos = i;
@@ -469,16 +447,14 @@ package class Argument : LeafPattern {
         pos = uint.max;
         return null;
     }
+
     override string toString() {
-        string res;
         string temp = _value.toString;
         if (temp is null) {
-            temp = "null";
+            temp = "None";
         }
-        return format("Argument(%s, %s)", _name, temp);
-    }
-    override const Pattern dup() {
-        return new Argument(name, value);
+        string n = format("'%s'", _name);
+        return format("Argument(%s, %s)", n, temp);
     }
 }
 
@@ -487,14 +463,14 @@ package class Command : Argument {
         super(name, value);
     }
     this(string source) {
-        super(source, new ArgValue("false"));
+        super(source, new ArgValue(false));
     }
-    override Pattern singleMatch(in Pattern[] left, ref uint pos) {
+    override Pattern singleMatch(Pattern[] left, ref uint pos) {
         foreach(i, pattern; left) {
             if (typeid(pattern) == typeid(Argument)) {
                 if (pattern.value.toString == name) {
                     pos = i;
-                    return new Command(name, new ArgValue("true"));
+                    return new Command(name, new ArgValue(true));
                 } else {
                     break;
                 }
@@ -506,29 +482,25 @@ package class Command : Argument {
     override string toString() {
         return format("Command(%s, %s)", _name, _value);
     }
-    override const Pattern dup() {
-        return new Command(name, value);
-    }
 }
 
 package class Required : BranchPattern {
-    this(in Pattern[] children) {
+    this(Pattern[] children) {
         super(children);
     }
 
-    override PatternMatch match(Pattern[] left, Pattern[] collected = []) {
+    override bool match(ref Pattern[] left, ref Pattern[] collected) {
         auto l = left;
         auto c = collected;
         foreach(child; _children) {
-            PatternMatch res = child.match(l, c);
-            if (!res.status) {
-                return PatternMatch(false, left, collected);
-            } else {
-                l = res.left;
-                c = res.collected;
+            auto res = child.match(l, c);
+            if (!res) {
+                return false;
             }
         }
-        return PatternMatch(true, l, c);
+        left = l;
+        collected = c;
+        return true;
     }
 
     override string toString() {
@@ -538,22 +510,17 @@ package class Required : BranchPattern {
         }
         return format("Required(%s)", join(childNames, ", "));
     }
-
-    override const Pattern dup() {
-        return new Required(children);
-    }
 }
 
 package class Optional : BranchPattern {
-    this(in Pattern[] children) {
+    this(Pattern[] children) {
         super(children);
     }
-    override PatternMatch match(Pattern[] left, Pattern[] collected = []) {
-        PatternMatch res = PatternMatch(true, left, collected);
+    override bool match(ref Pattern[] left, ref Pattern[] collected) {
         foreach(child; _children) {
-            res = child.match(left, collected);
+            auto res = child.match(left, collected);
         }
-        return PatternMatch(true, res.left, res.collected);
+        return true;
     }
     override string toString() {
         string[] childNames;
@@ -562,16 +529,13 @@ package class Optional : BranchPattern {
         }
         return format("Optional(%s)", join(childNames, ", "));
     }
-    override const Pattern dup() {
-        return new Optional(children);
-    }
 }
 
 package class OptionsShortcut : Optional {
     this() {
         super([]);
     }
-    this(in Pattern[] children) {
+    this(Pattern[] children) {
         super(children);
     }
 
@@ -582,44 +546,41 @@ package class OptionsShortcut : Optional {
         }
         return format("OptionsShortcut(%s)", join(childNames, ", "));
     }
-
-    override const Pattern dup() {
-        return new OptionsShortcut(children);
-    }
 }
 
 package class OneOrMore : BranchPattern {
-    this(in Pattern[] children) {
+    this(Pattern[] children) {
         super(children);
     }
-    override PatternMatch match(Pattern[] left, Pattern[] collected = []) {
+    override bool match(ref Pattern[] left, ref Pattern[] collected) {
         assert(_children.length == 1);
 
         auto c = collected;
-
-        Pattern[] l;
-        foreach(item; left) {
-            l ~= item.dup;
-        }
+        Pattern[] l = left;
         Pattern[] _l = null;
 
         bool matched = true;
         uint times = 0;
         while (matched) {
             auto match = _children[0].match(l, c);
-            if (match.status) {
+            if (match) {
                 times += 1;
+            } else {
+                times = 0;
             }
             if (_l == l) {
                 break;
             }
-            _l = match.left.dup;
+            _l = l;
         }
         if (times >= 1) {
-            return PatternMatch(true, l, c);
+            left = l;
+            collected = c;
+            return true;
         }
-        return PatternMatch(false, left, collected);
+        return false;
     }
+
     override string toString() {
         string[] childNames;
         foreach(child; _children) {
@@ -627,23 +588,22 @@ package class OneOrMore : BranchPattern {
         }
         return format("OneOrMore(%s)", join(childNames, ", "));
     }
-    override const Pattern dup() {
-        return new OneOrMore(children);
-    }
 }
 
 package class Either : BranchPattern {
-    this(in Pattern[] children) {
+    this(Pattern[] children) {
         super(children);
     }
 
-    override PatternMatch match(Pattern[] left, Pattern[] collected = []) {
+    override bool match(ref Pattern[] left, ref Pattern[] collected) {
         PatternMatch res = PatternMatch(false, left, collected);
         PatternMatch[] outcomes;
         foreach(child; _children) {
-            auto outcome = child.match(left, collected);
-            if (outcome.status) {
-                outcomes ~= outcome;
+            auto l = left;
+            auto c = collected;
+            auto matched = child.match(l, c);
+            if (matched) {
+                outcomes ~= PatternMatch(matched, l, c);
             }
         }
         if (outcomes.length > 0) {
@@ -651,11 +611,13 @@ package class Either : BranchPattern {
             foreach (m; outcomes) {
                 if (m.left.length < minLeft) {
                     minLeft = m.left.length;
-                    res = m.dup;
+                    res = m;
                 }
             }
         }
-        return res;
+        collected = res.collected;
+        left = res.left;
+        return true;
     }
     override string toString() {
         string[] childNames;
@@ -663,9 +625,6 @@ package class Either : BranchPattern {
             childNames ~= child.toString();
         }
         return format("Either(%s)", join(childNames, ", "));
-    }
-    override const Pattern dup() {
-        return new Either(children);
     }
 }
 

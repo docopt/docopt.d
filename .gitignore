@@ -5,3 +5,4 @@ libdocopt.a
 docopt.lib
 Debug
 Release
+*.suo
