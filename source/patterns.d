@@ -252,15 +252,14 @@ package class LeafPattern : Pattern {
 
         if (_value.isInt || _value.isList) {
             if (_value.isInt) {
+                int increment = 1;
                 if (sameName.length == 0) {
-                    match.setValue(new ArgValue(1));
+                    match.setValue(new ArgValue(increment));
                     collected ~= match;
                     left = left;
                     return true;
                 } else {
-                    ArgValue oldVal = match.value;
-                    oldVal.add(1);
-                    sameName[0].setValue(oldVal);
+                    sameName[0].value.add(increment);
                 }
             }
 
@@ -301,7 +300,7 @@ package class Option : LeafPattern {
     string _longArg;
     uint _argCount;
     ArgValue _value;
-    this(in string s, in string l, in uint ac=0, in ArgValue v = new ArgValue(false) ) {
+    this(in string s, in string l, in uint ac=0, in ArgValue v = new ArgValue() ) {
         if (l != null) {
             super(l, v);
         } else {
@@ -376,6 +375,10 @@ package class BranchPattern : Pattern {
         _children = children;
     }
 
+    this(Pattern child) {
+        _children = [child];
+    }
+
     override Pattern[] children() {
         return _children;
     }
@@ -402,13 +405,8 @@ package class BranchPattern : Pattern {
         }
         return res;
     }
-
-    //override const Pattern dup() {
-    //    return new BranchPattern(_children);
-    //}
 }
 
-// TODO remove first match
 private Pattern[] removeChild(Pattern[] arr, Pattern child) {
     Pattern[] result;
     bool found = false;
@@ -437,7 +435,7 @@ package class Argument : LeafPattern {
         }
         auto valuePat = regex(r"\[default: (.*)\]", "i");
         match = matchAll(source, valuePat);
-        string value = "";
+        string value = null;
         if (!match.empty()) {
             value = match.captures[0];
         }
@@ -495,7 +493,9 @@ package class Required : BranchPattern {
     this(Pattern[] children) {
         super(children);
     }
-
+    this(Pattern child) {
+        super(child);
+    }
     override bool match(ref Pattern[] left, ref Pattern[] collected) {
         auto l = left;
         auto c = collected;
@@ -523,6 +523,9 @@ package class Optional : BranchPattern {
     this(Pattern[] children) {
         super(children);
     }
+    this(Pattern child) {
+        super(child);
+    }
     override bool match(ref Pattern[] left, ref Pattern[] collected) {
         foreach(child; _children) {
             auto res = child.match(left, collected);
@@ -545,6 +548,9 @@ package class OptionsShortcut : Optional {
     this(Pattern[] children) {
         super(children);
     }
+    this(Pattern child) {
+        super(child);
+    }
 
     override string toString() {
         string[] childNames;
@@ -558,6 +564,9 @@ package class OptionsShortcut : Optional {
 package class OneOrMore : BranchPattern {
     this(Pattern[] children) {
         super(children);
+    }
+    this(Pattern child) {
+        super(child);
     }
     override bool match(ref Pattern[] left, ref Pattern[] collected) {
         assert(_children.length == 1);
@@ -601,6 +610,9 @@ package class Either : BranchPattern {
     this(Pattern[] children) {
         super(children);
     }
+    this(Pattern child) {
+        super(child);
+    }
 
     override bool match(ref Pattern[] left, ref Pattern[] collected) {
         PatternMatch res = PatternMatch(false, left, collected);
@@ -635,3 +647,78 @@ package class Either : BranchPattern {
     }
 }
 
+protected Option parseOption(string optionDescription) {
+    string shortArg = null;
+    string longArg = null;
+    uint argCount = 0;
+    string value = null;
+
+    auto parts = split(strip(optionDescription), "  ");
+    string options = parts[0];
+    string description = "";
+    if (parts.length > 1) {
+        description = parts[1];
+    }
+    options = replace(options, ",", " ");
+    options = replace(options, "=", " ");
+    foreach(s; split(options)) {
+        if (startsWith(s, "--")) {
+            longArg = s;
+        } else if (startsWith(s, "-")) {
+            shortArg = s;
+        } else {
+            argCount = 1;
+        }
+    }
+    if (argCount > 0) {
+        auto pat = regex(r"\[default: (.*)\]", "i");
+        auto match = matchAll(description, pat);
+        if (!match.empty()) {
+            value = match.captures[1];
+        }
+    }
+
+    if (value is null) {
+        return new Option(shortArg, longArg, argCount, new ArgValue());
+    } else {
+        return new Option(shortArg, longArg, argCount, new ArgValue(value));
+    }
+}
+
+
+
+unittest {
+
+    // Options
+    assert(parseOption("-h") == new Option("-h", null));
+    assert(parseOption("--help") == new Option(null, "--help"));
+    assert(parseOption("-h --help") == new Option("-h", "--help"));
+    assert(parseOption("-h, --help") == new Option("-h", "--help"));
+    assert(parseOption("-h TOPIC") == new Option("-h", null, 1));
+    assert(parseOption("--help TOPIC") == new Option(null, "--help", 1));
+    assert(parseOption("-h TOPIC --help TOPIC") == new Option("-h", "--help", 1));
+    assert(parseOption("-h TOPIC, --help TOPIC") == new Option("-h", "--help", 1));
+    assert(parseOption("-h TOPIC, --help=TOPIC") == new Option("-h", "--help", 1));
+
+    assert(parseOption("-h  Description...") == new Option("-h", null));
+    assert(parseOption("-h --help  Description...") == new Option("-h", "--help"));
+    assert(parseOption("-h TOPIC  Description...") == new Option("-h", null, 1));
+
+    assert(parseOption("    -h") == new Option("-h", null));
+
+    assert(parseOption("-h TOPIC  Descripton... [default: 2]") == 
+           new Option("-h", null, 1, new ArgValue("2")));
+    assert(parseOption("-h TOPIC  Descripton... [default: topic-1]") == 
+           new Option("-h", null, 1, new ArgValue("topic-1")));
+    assert(parseOption("--help=TOPIC  ... [default: 3.14]") == 
+           new Option(null, "--help", 1, new ArgValue("3.14")));
+    assert(parseOption("-h, --help=DIR  ... [default: ./]") == 
+           new Option("-h", "--help", 1, new ArgValue("./")));
+    assert(parseOption("-h TOPIC  Descripton... [dEfAuLt: 2]") == 
+           new Option("-h", null, 1, new ArgValue("2")));
+
+    assert(parseOption("-h").name == "-h");
+    assert(parseOption("-h --help").name == "--help");
+    assert(parseOption("--help").name == "--help");
+
+}

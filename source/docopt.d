@@ -43,51 +43,13 @@ class DocoptExitVersion : Exception {
     }
 }
 
-private Option parseOption(string optionDescription) {
-    string shortArg = null;
-    string longArg = null;
-    uint argCount = 0;
-    string value = null;
-
-    auto parts = split(strip(optionDescription), "  ");
-    string options = parts[0];
-    string description = "";
-    if (parts.length > 1) {
-        description = parts[1];
-    }
-    options = replace(options, ",", " ");
-    options = replace(options, "=", " ");
-    foreach(s; split(options)) {
-        if (startsWith(s, "--")) {
-            longArg = s;
-        } else if (startsWith(s, "-")) {
-            shortArg = s;
-        } else {
-            argCount = 1;
-        }
-    }
-    if (argCount > 0) {
-        auto pat = regex(r"\[default: (.*)\]", "i");
-        auto match = matchAll(description, pat);
-        if (!match.empty()) {
-            value = match.captures[1];
-        }
-    }
-
-    if (value is null) {
-        return new Option(shortArg, longArg, argCount, new ArgValue(false));
-    } else {
-        return new Option(shortArg, longArg, argCount, new ArgValue(value));
-    }
-}
-
 private Option[] parseDefaults(string doc) {
     Option[] defaults;
     foreach(sect; parseSection("options:", doc)) {
         auto s = sect[indexOf(sect, ":")+1..$];
         auto pat = regex(r"\n[ \t]*(-\S+?)");
-        auto parts = split('\n'~s, pat)[1..$];
-        auto match = array(matchAll('\n'~s, pat));
+        auto parts = split("\n"~s, pat)[1..$];
+        auto match = array(matchAll("\n"~s, pat));
         foreach(i, m; match) {
             string optionDescription = m[1] ~ parts[i];
             if (startsWith(optionDescription, "-")) {
@@ -342,7 +304,7 @@ private Pattern[] parseAtom(Tokens tokens, ref Option[] options) {
     }
 }
 
-private Pattern[] parseArgv(Tokens tokens, ref Option[] options, bool optionsFirst) {
+private Pattern[] parseArgv(Tokens tokens, ref Option[] options, bool optionsFirst=false) {
     Pattern[] parsed;
 
     while (tokens.current !is null) {
@@ -476,51 +438,295 @@ public ArgValue[string] docopt(string doc, string[] argv,
     assert(0);
 }
 
+version(unittest)
+{
+    import std.stdio;
+
+    Tokens TS(string toks, bool parsingArgv = true) {
+        return new Tokens(toks, parsingArgv);
+    }
+}
+
 unittest {
 
-auto doc =
-"   Usage:
-        my_program tcp <host> <port> [--timeout=<seconds>]
-        my_program serial <port> [--baud=<n>] [--timeout=<seconds>]
-        my_program (-h | --help | --version)
+    writeln("hello, docopt testing");
 
-    Options:
-        -h, --help  Show this screen and exit.
-        --baud=<n>  Baudrate [default: 9600]
+    // Commands
+    assert(docopt("Usage: prog add", ["add"]) == ["add": new ArgValue(true)]);
+    assert(docopt("Usage: prog [add]", [""]) == ["add": new ArgValue(false)]);
+    assert(docopt("Usage: prog [add]", ["add"]) == ["add": new ArgValue(true)]);
+    assert(docopt("Usage: prog (add|rm)", ["add"]) == ["add": new ArgValue(true), "rm": new ArgValue(false)]);
+    assert(docopt("Usage: prog (add|rm)", ["rm"]) == ["add": new ArgValue(false), "rm": new ArgValue(true)]);
+    assert(docopt("Usage: prog a b", ["a", "b"]) == ["a": new ArgValue(true), "b": new ArgValue(true)]);
+
+    // formal usage
+    auto doc = "
+Usage: prog [-hv] ARG
+       prog N M
+
+prog is a program.
 ";
+    auto usageStr = parseSection("usage:", doc);
+    assert(usageStr[0] ==  "Usage: prog [-hv] ARG\n       prog N M");
+    assert(formalUsage(usageStr[0]) == "( [-hv] ARG ) | ( N M )");
+
+    // test parseArgv
+    auto o = [new Option("-h", null), 
+              new Option("-v", "--verbose"),
+              new Option("-f", "--file", 1)];
+    assert(parseArgv(TS(""), o) == []);
+    assert(parseArgv(TS("-h"), o) == [new Option("-h", null, 0, new ArgValue(true))]);
+    assert(parseArgv(TS("-h --verbose"), o) == 
+           [new Option("-h", null, 0, new ArgValue(true)), 
+            new Option("-v", "--verbose", 0, new ArgValue(true))]);
+    assert(parseArgv(TS("-h --file f.txt"), o) == 
+           [new Option("-h", null, 0, new ArgValue(true)), 
+            new Option("-f", "--file", 1, new ArgValue("f.txt"))]);
+
+    Pattern[] correct;    
+    correct ~= new Option("-h", null, 0, new ArgValue(true));
+    correct ~= new Option("-f", "--file", 1, new ArgValue("f.txt"));
+    correct ~= new Argument(null, new ArgValue("arg"));
+    assert(parseArgv(TS("-h --file f.txt arg"), o) == correct);
+
+    correct.clear();
+    correct ~= new Option("-h", null, 0, new ArgValue(true));
+    correct ~= new Option("-f", "--file", 1, new ArgValue("f.txt"));
+    correct ~= new Argument(null, new ArgValue("arg"));
+    correct ~= new Argument(null, new ArgValue("arg2"));
+    assert(parseArgv(TS("-h --file f.txt arg arg2"), o) == correct);
+
+    correct.clear();
+    correct ~= new Option("-h", null, 0, new ArgValue(true));
+    correct ~= new Argument(null, new ArgValue("arg"));
+    correct ~= new Argument(null, new ArgValue("--"));
+    correct ~= new Argument(null, new ArgValue("-v"));
+    assert(parseArgv(TS("-h arg -- -v"), o) == correct);
+
+    // parsePattern
+    assert(parsePattern("[ -h ]", o) == new Required(new Optional(new Option("-h", null))));
+    assert(parsePattern("[ ARG ... ]", o) == 
+           new Required(new Optional(new OneOrMore(new Argument("ARG", new ArgValue())))));
+
+    assert(parsePattern("[ -h | -v ]", o) == 
+           new Required(new Optional(new Either([new Option("-h", null),
+                                                 new Option("-v", "--verbose")]))));
+    Pattern temp1[];
+    temp1 ~= new Option("-v", "--verbose");
+    temp1 ~= new Optional(new Option("-f", "--file", 1, new ArgValue()));
+    Pattern temp2[];
+    temp2 ~= new Option("-h", null);
+    temp2 ~= new Required(temp1);
+    assert(parsePattern("( -h | -v [ --file <f> ] )", o) == 
+           new Required(new Required(new Either(temp2))));
+
+    //assert(parsePattern("(-h|-v[--file=<f>]N...)", options=o) == \
+    //                Required(Required(Either(Option("-h"),
+    //                                         Required(Option("-v", "--verbose"),
+    //                                                  Optional(Option("-f", "--file", 1, None)),
+    //                                                  OneOrMore(Argument("N"))))))
+    //assert(parsePattern("(N [M | (K | L)] | O P)", options=[]) == \
+    //                    Required(Required(Either(
+    //                                             Required(Argument("N"),
+    //                                                      Optional(Either(Argument("M"),
+    //                                                                      Required(Either(Argument("K"),
+    //                                                                                      Argument("L")))))),
+    //                                             Required(Argument("O"), Argument("P")))))
+    //assert(parsePattern("[ -h ] [N]", options=o) == \
+    //                        Required(Optional(Option("-h")),
+    //                                 Optional(Argument("N")))
+    //assert(parsePattern("[options]", options=o) == \
+    //                            Required(Optional(OptionsShortcut()))
+    //assert(parsePattern("[options] A", options=o) == \
+    //                                Required(Optional(OptionsShortcut()),
+    //                                         Argument("A"))
+    //assert(parsePattern("-v [options]", options=o) == \
+    //                                    Required(Option("-v", "--verbose"),
+    //                                             Optional(OptionsShortcut()))
+    //assert(parsePattern("ADD", options=o) == Required(Argument("ADD"))
+    //assert(parsePattern("<add>", options=o) == Required(Argument("<add>"))
+    //assert(parsePattern("add", options=o) == Required(Command("add"))
+
+    // option match
+
+    Option testA = parseOption("-a");
+    Pattern[] pat;
+    Pattern[] coll;
+    Pattern[] finalPat;
+    Pattern[] finalColl;
+    pat ~= new Option("-a", null, 0, new ArgValue(true));
+    finalColl ~= new Option("-a", null, 0, new ArgValue(true));
+    assert(testA.match(pat, coll));
+    assert(pat == finalPat);
+    assert(coll == finalColl);
+
+    pat.clear();
+    coll.clear();
+    finalPat.clear();
+    finalColl.clear();
+    pat ~= new Option("-x", null);
+    finalPat ~= new Option("-x", null);
+    assert(testA.match(pat, coll) == false);
+    assert(pat == finalPat);
+    assert(coll == finalColl);
+
+    pat.clear();
+    coll.clear();
+    finalPat.clear();
+    finalColl.clear();
+    pat ~= new Argument("N");
+    finalPat ~= new Argument("N");
+    assert(testA.match(pat, coll) == false);
+    assert(pat == finalPat);
+    assert(coll == finalColl);
+
+    pat.clear();
+    coll.clear();
+    finalPat.clear();
+    finalColl.clear();
+    pat ~= new Option("-x", null);
+    pat ~= new Option("-a", null);
+    pat ~= new Argument("N");
+    finalPat ~= new Option("-x", null);
+    finalPat ~= new Argument("N");
+    finalColl ~= new Option("-a", null);
+    assert(testA.match(pat, coll) == true);
+    assert(pat == finalPat);
+    assert(coll == finalColl);
+
+    pat.clear();
+    coll.clear();
+    finalPat.clear();
+    finalColl.clear();
+    pat ~= new Option("-a", null, 0, new ArgValue(true));
+    pat ~= new Option("-a", null);
+    finalPat ~= new Option("-a", null);
+    finalColl ~= new Option("-a", null, 0, new ArgValue(true));
+    assert(testA.match(pat, coll) == true);
+    assert(pat == finalPat);
+    assert(coll == finalColl);
+
+    // argument match
+    Argument testArg = new Argument("N", new ArgValue());
+    pat.clear();
+    coll.clear();
+    finalPat.clear();
+    finalColl.clear();
+    pat ~= new Argument(null, new ArgValue(9));
+    finalColl ~= new Argument("N", new ArgValue(9));
+    assert(testArg.match(pat, coll));
+    assert(pat == finalPat);
+    assert(coll == finalColl);
+    //assert Argument('N').match([Option('-x')]) == (False, [Option('-x')], [])
+    //assert Argument('N').match([Option('-x'),
+    //    Option('-a'),
+    //    Argument(None, 5)]) == \
+    //        (True, [Option('-x'), Option('-a')], [Argument('N', 5)])
+    //assert Argument('N').match([Argument(None, 9), Argument(None, 0)]) == \
+    //            (True, [Argument(None, 0)], [Argument('N', 9)])
+
+    // command match
+
+    Command testC = new Command("c");
+    pat.clear();
+    coll.clear();
+    finalPat.clear();
+    finalColl.clear();
+    pat ~= new Argument(null, new ArgValue("c"));
+    finalColl ~= new Command("c", new ArgValue(true));
+    assert(testC.match(pat, coll));
+    assert(pat == finalPat);
+    assert(coll == finalColl);
+
+    //assert Command('c').match([Option('-x')]) == (False, [Option('-x')], [])
+    //assert Command('c').match([Option('-x'),
+    //        Option('-a'),
+    //        Argument(None, 'c')]) == \
+    //            (True, [Option('-x'), Option('-a')], [Command('c', True)])
+    //assert Either(Command('add', False), Command('rm', False)).match(
+    //                 [Argument(None, 'rm')]) == (True, [], [Command('rm', True)])
+
+
+    // test parseSection
+
+    auto usage = "
+usage: this
+
+usage:hai
+usage: this that
+
+usage: foo
+       bar
+
+PROGRAM USAGE:
+ foo
+ bar
+usage:
+\ttoo
+\ttar
+Usage: eggs spam
+BAZZ
+usage: pit stop";
+
+    assert(parseSection("usage:", "foo bar fizz buzz") == []);
+    assert(parseSection("usage:", "usage: prog") == ["usage: prog"]);
+    assert(parseSection("usage:", "usage: -x\n -y") == ["usage: -x\n -y"]);
+    assert(parseSection("usage:", usage) == [
+            "usage: this",
+            "usage:hai",
+            "usage: this that",
+            "usage: foo\n       bar",
+            "PROGRAM USAGE:\n foo\n bar",
+            "usage:\n\ttoo\n\ttar",
+            "Usage: eggs spam",
+            "usage: pit stop",
+        ]);
+}
+
 
 /*
-    string argv[5] = ["tcp", "127.0.0.1", "80", "--timeout", "30"];
-    auto res = docopt(doc, argv, true, "0.1.0");
-    writeln("---------------------------------------");
-    docopt(doc, ["-h"], true, "0.1.0");
+auto doc =
+"   Usage:
+my_program tcp <host> <port> [--timeout=<seconds>]
+my_program serial <port> [--baud=<n>] [--timeout=<seconds>]
+my_program (-h | --help | --version)
 
-    writeln("---------------------------------------");
-    docopt(doc, ["--version"], true, "0.1.0");
-*/
-
-auto doc2 =
-"
-    Usage: arguments [-vqrh] [FILE] ...
-           arguments (--left | --right) CORRECTION FILE
-
-    Process FILE and optionally apply correction to either left-hand side or
-    right-hand side.
-
-    Arguments:
-        FILE        optional input file
-        CORRECTION  correction angle, needs FILE, --left or --right to be present
-
-    Options:
-        -h --help
-        -v       verbose mode
-        -q       quiet mode
-        -r       make report
-        --left   use left-hand side
-        --right  use right-hand side
-
+Options:
+-h, --help  Show this screen and exit.
+--baud=<n>  Baudrate [default: 9600]
 ";
 
-    string argv2[4] = ["-r", "-v", "foo.txt", "bar.txt"];
-    auto res = docopt(doc2, argv2, true, "0.1.0");
-}
+
+string argv[5] = ["tcp", "127.0.0.1", "80", "--timeout", "30"];
+auto res = docopt(doc, argv, true, "0.1.0");
+writeln("---------------------------------------");
+docopt(doc, ["-h"], true, "0.1.0");
+
+writeln("---------------------------------------");
+docopt(doc, ["--version"], true, "0.1.0");
+*/
+
+//auto doc2 =
+//"
+//    Usage: arguments [-vqrh] [FILE] ...
+//           arguments (--left | --right) CORRECTION FILE
+//
+//    Process FILE and optionally apply correction to either left-hand side or
+//    right-hand side.
+//
+//    Arguments:
+//        FILE        optional input file
+//        CORRECTION  correction angle, needs FILE, --left or --right to be present
+//
+//    Options:
+//        -h --help
+//        -v       verbose mode
+//        -q       quiet mode
+//        -r       make report
+//        --left   use left-hand side
+//        --right  use right-hand side
+//
+//";
+//
+//    string argv2[4] = ["-r", "-v", "foo.txt", "bar.txt"];
+//    auto res = docopt(doc2, argv2, true, "0.1.0");

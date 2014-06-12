@@ -14,6 +14,17 @@ class ArgValue
         }
     }
 
+    override bool opEquals(Object rhs) {
+        if (typeid(this) != typeid(rhs)) {
+            return false;
+        }
+        return (this.value == (cast(ArgValue)rhs).value);
+    }
+
+    override size_t toHash() {
+        return typeid(this).getHash(&this);
+    }
+
     public this() {
         _value = null;
     }
