@@ -124,7 +124,7 @@ package abstract class Pattern {
                         } else if (child.value.isString) {
                             writeln("can we get here?");
                             writeln("need to split string into list");
-                            assert(false);
+                            //assert(false);
                         }
                     }
                     if (typeid(child) == typeid(Command) || (typeid(child) == typeid(Option) && (cast(Option)child)._argCount==0)) {
@@ -407,7 +407,7 @@ package class BranchPattern : Pattern {
     }
 }
 
-private Pattern[] removeChild(Pattern[] arr, Pattern child) {
+protected Pattern[] removeChild(Pattern[] arr, Pattern child) {
     Pattern[] result;
     bool found = false;
     foreach(pat; arr) {

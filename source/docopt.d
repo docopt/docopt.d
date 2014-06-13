@@ -348,6 +348,17 @@ private void extras(bool help, string vers, Pattern[] args) {
     }
 }
 
+Pattern[] subsetOptions(Option[] docOptions, Pattern[] patternOptions) {
+    Pattern[] res;
+    res ~= docOptions;
+    foreach(p; patternOptions) {
+        if (canFind(res, p)) {
+            removeChild(res, p);
+        }
+    }
+    return res;
+}
+
 private ArgValue[string] parse(string doc, string[] argv,
                                bool help = false,
                                string vers = null,
@@ -382,10 +393,10 @@ private ArgValue[string] parse(string doc, string[] argv,
 
     auto patternOptions = pattern.flat([typeid(Option).toString]);
 
-    //foreach(ref shortcut; pattern.flat([typeid(OptionsShortcut).toString])) {
-    //    auto docOptions = parseDefaults(doc);
-    //    shortcut.setChildren(subSetOptions(docOptions, patternOptions));
-    //}
+    foreach(ref shortcut; pattern.flat([typeid(OptionsShortcut).toString])) {
+        auto docOptions = parseDefaults(doc);
+        shortcut.setChildren(subsetOptions(docOptions, patternOptions));
+    }
 
     extras(help, vers, args);
 
@@ -440,10 +451,26 @@ public ArgValue[string] docopt(string doc, string[] argv,
 
 version(unittest)
 {
-    import std.stdio;
+    import std.file;
+    import std.path;
 
     Tokens TS(string toks, bool parsingArgv = true) {
         return new Tokens(toks, parsingArgv);
+    }
+
+    void splitTestCases(string raw) {
+        auto pat = regex("#.*$", "m");
+        auto res = replaceAll(raw, pat, "");
+        if (startsWith(raw, "\"\"\"")) {
+            raw = raw[3..$];
+        }
+        writeln(raw);
+        
+        foreach(fixture; split(raw, "r\"\"\"")) {
+            writeln("---------------------");
+            writeln(fixture);
+        }
+
     }
 }
 
@@ -638,13 +665,72 @@ prog is a program.
     assert(pat == finalPat);
     assert(coll == finalColl);
 
-    //assert Command('c').match([Option('-x')]) == (False, [Option('-x')], [])
-    //assert Command('c').match([Option('-x'),
-    //        Option('-a'),
-    //        Argument(None, 'c')]) == \
-    //            (True, [Option('-x'), Option('-a')], [Command('c', True)])
-    //assert Either(Command('add', False), Command('rm', False)).match(
-    //                 [Argument(None, 'rm')]) == (True, [], [Command('rm', True)])
+    pat.clear();
+    coll.clear();
+    finalPat.clear();
+    finalColl.clear();
+    pat ~= new Option("-x", null);
+    finalPat ~= new Option("-x", null);
+    assert(testC.match(pat, coll) == false);
+    assert(pat == finalPat);
+    assert(coll == finalColl);
+
+    pat.clear();
+    coll.clear();
+    finalPat.clear();
+    finalColl.clear();
+    pat ~= new Option("-x", null);
+    pat ~= new Option("-a", null);
+    pat ~= new Argument(null, new ArgValue("c"));
+    finalPat ~= new Option("-x", null);
+    finalPat ~= new Option("-a", null);
+    finalColl ~= new Command("c", new ArgValue(true));
+    assert(testC.match(pat, coll));
+    assert(pat == finalPat);
+    assert(coll == finalColl);
+
+    pat.clear();
+    coll.clear();
+    finalPat.clear();
+    finalColl.clear();
+    pat ~= new Argument(null, new ArgValue("rm"));
+    finalColl ~= new Command("rm", new ArgValue(true));
+    Pattern testE = new Either([new Command("add", new ArgValue(false)),
+                                new Command("rm", new ArgValue(false))]);
+    assert(testE.match(pat, coll));
+    assert(pat == finalPat);
+    assert(coll == finalColl);
+
+    // test optional match
+    Optional testOptA = new Optional(new Option("-a", null));
+    pat.clear();
+    coll.clear();
+    finalPat.clear();
+    finalColl.clear();
+    pat ~= new Option("-a", null);
+    finalColl ~= new Option("-a", null);
+    assert(testOptA.match(pat, coll));
+    assert(pat == finalPat);
+    assert(coll == finalColl);
+
+
+    //assert Optional(Option('-a')).match([Option('-a')]) == \
+    //    (True, [], [Option('-a')])
+
+    //assert Optional(Option('-a')).match([]) == (True, [], [])
+    //assert Optional(Option('-a')).match([Option('-x')]) == \
+    //            (True, [Option('-x')], [])
+    //assert Optional(Option('-a'), Option('-b')).match([Option('-a')]) == \
+    //                (True, [], [Option('-a')])
+    //assert Optional(Option('-a'), Option('-b')).match([Option('-b')]) == \
+    //                    (True, [], [Option('-b')])
+    //assert Optional(Option('-a'), Option('-b')).match([Option('-x')]) == \
+    //                        (True, [Option('-x')], [])
+    //assert Optional(Argument('N')).match([Argument(None, 9)]) == \
+    //                            (True, [], [Argument('N', 9)])
+    //assert Optional(Option('-a'), Option('-b')).match(
+    //                    [Option('-b'), Option('-x'), Option('-a')]) == \
+    //                 (True, [Option('-x')], [Option('-a'), Option('-b')])
 
 
     // test parseSection
@@ -681,6 +767,42 @@ usage: pit stop";
             "Usage: eggs spam",
             "usage: pit stop",
         ]);
+
+
+    // test any options parameter
+    try {
+        parse("usage: prog [options]", ["-foo", "--bar", "--spam=eggs"]);
+    } catch(DocoptArgumentError) {
+        assert(true);
+    } catch(Exception) {
+        assert(false);
+    }
+    try {
+        parse("usage: prog [options]", ["--foo", "--bar", "--bar"]);
+    } catch(DocoptArgumentError) {
+        assert(true);
+    } catch(Exception) {
+        assert(false);
+    }
+    try {
+        parse("usage: prog [options]", ["--bar", "--bar", "--bar", "-ffff"]);
+    } catch(DocoptArgumentError) {
+        assert(true);
+    } catch(Exception) {
+        assert(false);
+    }
+    try {
+        parse("usage: prog [options]", ["--long=arg", "--long=another"]);
+    } catch(DocoptArgumentError) {
+        assert(true);
+    } catch(Exception) {
+        assert(false);
+    }
+
+    auto dirName = absolutePath(dirName(__FILE__));
+    auto raw = readText(buildPath(dirName, "testcases.docopt"));
+
+    splitTestCases(raw);
 }
 
 
