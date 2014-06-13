@@ -353,13 +353,13 @@ Pattern[] subsetOptions(Option[] docOptions, Pattern[] patternOptions) {
     res ~= docOptions;
     foreach(p; patternOptions) {
         if (canFind(res, p)) {
-            removeChild(res, p);
+            res = removeChild(res, p);
         }
     }
     return res;
 }
 
-private ArgValue[string] parse(string doc, string[] argv,
+public ArgValue[string] parse(string doc, string[] argv,
                                bool help = false,
                                string vers = null,
                                bool optionsFirst = false) {
@@ -383,6 +383,8 @@ private ArgValue[string] parse(string doc, string[] argv,
     } catch(TokensOptionError e) {
         throw new DocoptLanguageError(e.msg);
     }
+
+    writeln(options);
 
     Pattern[] args;
     try {
@@ -412,11 +414,8 @@ private ArgValue[string] parse(string doc, string[] argv,
     } 
     
     if (match) {
-        string[] msg;
-        foreach(a; args) {
-            msg ~= (cast(Option)a).toSimpleString;
-        }
-        throw new DocoptArgumentError(format("Unexpected arguments: %s", join(msg, ", ")));
+        // need prettier msg
+        throw new DocoptArgumentError(format("Unexpected arguments: %s", match));
     }
 
     throw new DocoptArgumentError("Arguments did not match");
@@ -451,27 +450,10 @@ public ArgValue[string] docopt(string doc, string[] argv,
 
 version(unittest)
 {
-    import std.file;
-    import std.path;
-
     Tokens TS(string toks, bool parsingArgv = true) {
         return new Tokens(toks, parsingArgv);
     }
 
-    void splitTestCases(string raw) {
-        auto pat = regex("#.*$", "m");
-        auto res = replaceAll(raw, pat, "");
-        if (startsWith(raw, "\"\"\"")) {
-            raw = raw[3..$];
-        }
-        writeln(raw);
-        
-        foreach(fixture; split(raw, "r\"\"\"")) {
-            writeln("---------------------");
-            writeln(fixture);
-        }
-
-    }
 }
 
 unittest {
@@ -479,6 +461,8 @@ unittest {
     writeln("hello, docopt testing");
 
     // Commands
+    ArgValue[string] empty;
+    assert(docopt("Usage: prog", []) == empty);
     assert(docopt("Usage: prog add", ["add"]) == ["add": new ArgValue(true)]);
     assert(docopt("Usage: prog [add]", [""]) == ["add": new ArgValue(false)]);
     assert(docopt("Usage: prog [add]", ["add"]) == ["add": new ArgValue(true)]);
@@ -540,7 +524,7 @@ prog is a program.
                                                  new Option("-v", "--verbose")]))));
     Pattern temp1[];
     temp1 ~= new Option("-v", "--verbose");
-    temp1 ~= new Optional(new Option("-f", "--file", 1, new ArgValue()));
+    temp1 ~= new Optional(new Option("-f", "--file", 1, new ArgValue(false)));
     Pattern temp2[];
     temp2 ~= new Option("-h", null);
     temp2 ~= new Required(temp1);
@@ -799,10 +783,6 @@ usage: pit stop";
         assert(false);
     }
 
-    auto dirName = absolutePath(dirName(__FILE__));
-    auto raw = readText(buildPath(dirName, "testcases.docopt"));
-
-    splitTestCases(raw);
 }
 
 

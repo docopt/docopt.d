@@ -4,7 +4,7 @@ import std.container;
 import std.variant;
 import std.conv;
 
-class ArgValue
+public class ArgValue
 {
     private Variant _value;
 
@@ -102,7 +102,7 @@ class ArgValue
 				return join(res, ", ");
 			}
         } else if (isNull) {
-            return "None";
+            return "null";
         } else {
             return _value.toString;
         }
@@ -185,4 +185,8 @@ unittest {
 
     s.add(["from", "D"]);
     assert(s.toString == "[hello], [world], [from], [D]");
+
+    string[] temp;
+    ArgValue emptyList = new ArgValue(temp);
+    assert(emptyList.isList);
 }

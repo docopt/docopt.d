@@ -92,7 +92,7 @@ package abstract class Pattern {
             }
         }
         foreach(i, ref child; children()) {
-            if (child.children is null) {
+            if (!cast(BranchPattern)child) {
                 auto place = find(uniq, child);
                 assert(place != []);
                 child = place[0];
@@ -117,14 +117,12 @@ package abstract class Pattern {
         foreach(item; either) {
             foreach(i, child; item) {
                 if (count(item, child) > 1) {
-                    if (typeid(child) == typeid(Argument) || (typeid(child) == typeid(Option) && (cast(Option)child)._argCount==0)) {
+                    if (typeid(child) == typeid(Argument) || (typeid(child) == typeid(Option) && (cast(Option)child)._argCount>0)) {
                         if (child.value.isNull) {
                             string[] temp;
                             child.setValue(new ArgValue(temp));
-                        } else if (child.value.isString) {
-                            writeln("can we get here?");
-                            writeln("need to split string into list");
-                            //assert(false);
+                        } else if (!child.value.isList) {
+                            child.setValue(new ArgValue(split(child.value.toString)));
                         }
                     }
                     if (typeid(child) == typeid(Command) || (typeid(child) == typeid(Option) && (cast(Option)child)._argCount==0)) {
@@ -191,14 +189,12 @@ private Pattern transform(Pattern pattern) {
 
 
 package class LeafPattern : Pattern {
-    protected string _name = null;
-    protected ArgValue _value = null;
+    string _name = null;
+    ArgValue _value = null;
 
-    this(in string name, in ArgValue value = null) {
+    this(in string name, in ArgValue value = new ArgValue()) {
         _name = name.dup;
-        if (value !is null) {
-            _value = value.dup;
-        }
+        _value = value.dup;
     }
 
     override const string name() {
@@ -235,7 +231,6 @@ package class LeafPattern : Pattern {
     override bool match(ref Pattern[] left, ref Pattern[] collected) {
         uint pos = uint.max;
         auto match = singleMatch(left, pos);
-
         if (match is null) {
             return false;
         }
@@ -299,8 +294,8 @@ package class Option : LeafPattern {
     string _shortArg;
     string _longArg;
     uint _argCount;
-    ArgValue _value;
-    this(in string s, in string l, in uint ac=0, in ArgValue v = new ArgValue() ) {
+
+    this(in string s, in string l, in uint ac=0, in ArgValue v = new ArgValue(false) ) {
         if (l != null) {
             super(l, v);
         } else {
@@ -651,7 +646,7 @@ protected Option parseOption(string optionDescription) {
     string shortArg = null;
     string longArg = null;
     uint argCount = 0;
-    string value = null;
+    string value = "false";
 
     auto parts = split(strip(optionDescription), "  ");
     string options = parts[0];
@@ -678,8 +673,8 @@ protected Option parseOption(string optionDescription) {
         }
     }
 
-    if (value is null) {
-        return new Option(shortArg, longArg, argCount, new ArgValue());
+    if (value == "false") {
+        return new Option(shortArg, longArg, argCount, new ArgValue(false));
     } else {
         return new Option(shortArg, longArg, argCount, new ArgValue(value));
     }
