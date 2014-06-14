@@ -61,9 +61,16 @@ which has all features of the latest version.
 Installation
 ======================================================================
 
-Use `dub <http://code.dlang.org>`_ ::
+Use `dub <http://code.dlang.org>`_.
 
-    "TODO: dub requires statement"
+.. code:: json
+
+    {
+	    "dependencies": {
+		    "docopt": ">=0.6.1"
+	    }
+    }
+
 
 **docopt** is tested with D 2.065.
 
