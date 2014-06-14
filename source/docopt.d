@@ -100,7 +100,8 @@ private Pattern[] parseLong(Tokens tokens, ref Option[] options) {
             similar ~= o;
         }
     }
-    if (similar.length == 0) {
+
+    if (tokens.isParsingArgv && similar.length == 0) {
         foreach (o; options) {
             if (o._longArg && startsWith(o._longArg, longArg)) {
                 similar ~= o;
@@ -385,6 +386,7 @@ public ArgValue[string] parse(string doc, string[] argv,
     }
 
     //writeln(options);
+    //writeln(pattern);
 
     Pattern[] args;
     try {

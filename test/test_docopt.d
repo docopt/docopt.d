@@ -85,13 +85,18 @@ class DocoptTestItem {
         _expect = expect;
     }
 
+    @property
+    string doc() {
+        return _doc;
+    }
+
     bool runTest() {
         string result;
         try {
-           docopt.ArgValue[string] temp = docopt.parse(_doc, _argv);
-           result = prettyArgValue(temp);
+            docopt.ArgValue[string] temp = docopt.parse(_doc, _argv);
+            result = prettyArgValue(temp);
         } catch (DocoptArgumentError e) {
-            result = "\"user-error\""; // parseJSON("user-error");
+            result = "\"user-error\"";
             return (result == _expect.toString);
         } catch (Exception e) {
             writeln(e);
@@ -102,8 +107,6 @@ class DocoptTestItem {
         if (compareJSON(_expect, _result)) {
             return true;
         } else {
-            writeln(_index);
-            writeln(_doc);
             writeln(format("expect: %s\nresult: %s", 
                            _expect, _result));
             return false;
@@ -127,7 +130,7 @@ DocoptTestItem[] splitTestCases(string raw) {
             foreach(testcase; parts[1].split('$')[1..$]) {
                 auto argv_parts = strip(testcase).split("\n");
                 auto expect = parseJSON(join(argv_parts[1..$], "\n"));
-                auto prog_parts = argv_parts[0].split(" ");
+                auto prog_parts = argv_parts[0].split();
                 auto prog = prog_parts[0];
                 string[] argv = [];
                 if (prog_parts.length > 1) {
@@ -153,8 +156,13 @@ int main(string[] args) {
     foreach(uint i, test; testcases) {
         if (test.runTest()) {
             passed ~= i;
+        } else {
+            writeln(i, "failed");
+            writeln(test.doc);
+            writeln();
         }
     }
+
     writeln(format("%d passed of %d run : %.1f%%", 
                    passed.length, testcases.length,
                    100.0*cast(float)passed.length/cast(float)testcases.length));

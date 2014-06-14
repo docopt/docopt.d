@@ -89,9 +89,9 @@ public class ArgValue
 			} else {
 	            string[] res;
 		        foreach(string v; asList) {
-			        res ~= format("[%s]", v);
+			        res ~= format("\"%s\"", v);
 				}
-				return join(res, ", ");
+				return "[" ~ join(res, ", ") ~ "]";
 			}
         } else if (isNull) {
             return "null";
@@ -173,10 +173,10 @@ unittest {
     s.add("world");
     assert(s.toString);
 	assert(s.isList);
-    assert(s.toString == "[hello], [world]");
+    assert(s.toString == "[\"hello\", \"world\"]");
 
     s.add(["from", "D"]);
-    assert(s.toString == "[hello], [world], [from], [D]");
+    assert(s.toString == "[\"hello\", \"world\", \"from\", \"D\"]");
 
     string[] temp;
     ArgValue emptyList = new ArgValue(temp);

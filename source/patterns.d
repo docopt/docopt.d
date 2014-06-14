@@ -231,6 +231,7 @@ package class LeafPattern : Pattern {
     override bool match(ref Pattern[] left, ref Pattern[] collected) {
         uint pos = uint.max;
         auto match = singleMatch(left, pos);
+
         if (match is null) {
             return false;
         }
@@ -275,7 +276,6 @@ package class LeafPattern : Pattern {
                     sameName[0].value.add(increment);
                 }
             }
-
             left = left_;
             return true;
         }
@@ -503,7 +503,7 @@ package class Required : BranchPattern {
         auto l = left;
         auto c = collected;
         foreach(child; _children) {
-            auto res = child.match(l, c);
+            bool res = child.match(l, c);
             if (!res) {
                 return false;
             }
@@ -574,18 +574,16 @@ package class OneOrMore : BranchPattern {
     override bool match(ref Pattern[] left, ref Pattern[] collected) {
         assert(_children.length == 1);
 
-        auto c = collected;
+        Pattern[] c = collected;
         Pattern[] l = left;
         Pattern[] _l = null;
 
         bool matched = true;
         uint times = 0;
         while (matched) {
-            auto match = _children[0].match(l, c);
-            if (match) {
+            matched = _children[0].match(l, c);
+            if (matched) {
                 times += 1;
-            } else {
-                times = 0;
             }
             if (_l == l) {
                 break;
@@ -636,10 +634,11 @@ package class Either : BranchPattern {
                     res = m;
                 }
             }
+            collected = res.collected;
+            left = res.left;
+            return res.status;
         }
-        collected = res.collected;
-        left = res.left;
-        return true;
+        return false;
     }
     override string toString() {
         string[] childNames;
@@ -660,7 +659,7 @@ protected Option parseOption(string optionDescription) {
     string options = parts[0];
     string description = "";
     if (parts.length > 1) {
-        description = parts[1];
+        description = join(parts[1..$], " ");
     }
     options = replace(options, ",", " ");
     options = replace(options, "=", " ");
