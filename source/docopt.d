@@ -1,3 +1,12 @@
+//  D command-line interface parser that will make you smile.
+//  Copyright (c) 2014 Bob Tolbert, bob@tolbert.org
+//  Licensed under terms of MIT license (see LICENSE-MIT)
+//
+//  https://github.com/rwtolbert/docopt.d
+//
+//  Ported from Python to D based on:
+//   - http://docopt.org
+
 import std.stdio;
 import std.regex;
 import std.string;
@@ -790,51 +799,3 @@ usage: pit stop";
     }
 
 }
-
-
-/*
-auto doc =
-"   Usage:
-my_program tcp <host> <port> [--timeout=<seconds>]
-my_program serial <port> [--baud=<n>] [--timeout=<seconds>]
-my_program (-h | --help | --version)
-
-Options:
--h, --help  Show this screen and exit.
---baud=<n>  Baudrate [default: 9600]
-";
-
-
-string argv[5] = ["tcp", "127.0.0.1", "80", "--timeout", "30"];
-auto res = docopt(doc, argv, true, "0.1.0");
-writeln("---------------------------------------");
-docopt(doc, ["-h"], true, "0.1.0");
-
-writeln("---------------------------------------");
-docopt(doc, ["--version"], true, "0.1.0");
-*/
-
-//auto doc2 =
-//"
-//    Usage: arguments [-vqrh] [FILE] ...
-//           arguments (--left | --right) CORRECTION FILE
-//
-//    Process FILE and optionally apply correction to either left-hand side or
-//    right-hand side.
-//
-//    Arguments:
-//        FILE        optional input file
-//        CORRECTION  correction angle, needs FILE, --left or --right to be present
-//
-//    Options:
-//        -h --help
-//        -v       verbose mode
-//        -q       quiet mode
-//        -r       make report
-//        --left   use left-hand side
-//        --right  use right-hand side
-//
-//";
-//
-//    string argv2[4] = ["-r", "-v", "foo.txt", "bar.txt"];
-//    auto res = docopt(doc2, argv2, true, "0.1.0");

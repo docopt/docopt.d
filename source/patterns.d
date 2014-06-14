@@ -1,3 +1,13 @@
+//  D command-line interface parser that will make you smile.
+//  Copyright (c) 2014 Bob Tolbert, bob@tolbert.org
+//  Licensed under terms of MIT license (see LICENSE-MIT)
+//
+//  https://github.com/rwtolbert/docopt.d
+//
+//  Ported from Python to D based on:
+//   - http://docopt.org
+
+
 import std.stdio;
 import std.regex;
 import std.string;
