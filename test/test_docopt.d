@@ -19,41 +19,6 @@ import std.json;
 
 import docopt;
 
-string prettyArgValue(docopt.ArgValue[string] dict) {
-    string ret = "{";
-    bool first = true;
-    foreach(key, val; dict) {
-        if (first)
-            first = false;
-        else
-            ret ~= ",";
-
-        ret ~= format("\"%s\"", key);
-        ret ~= ":";
-        if (val.isBool) {
-            ret ~= val.toString;
-        } else if (val.isInt) {
-            ret ~= val.toString;
-        } else if (val.isNull) {
-            ret ~= "null";
-        } else if (val.isList) {
-            ret ~= "[";
-            bool firstList = true;
-            foreach(str; val.asList) {
-                if (firstList)
-                    firstList = false;
-                else
-                    ret ~= ",";
-                ret ~= format("\"%s\"", str);
-            }
-            ret ~= "]";
-        } else {
-            ret ~= format("\"%s\"", val.toString);
-        }
-    }
-    ret ~= "}";
-    return ret;
-}
 
 string sortedJSON(string input) {
     string[] parts = split(input, "\n");
@@ -104,7 +69,7 @@ class DocoptTestItem {
         string result;
         try {
             docopt.ArgValue[string] temp = docopt.parse(_doc, _argv);
-            result = prettyArgValue(temp);
+            result = prettyPrintArgs(temp);
         } catch (DocoptArgumentError e) {
             result = "\"user-error\"";
             return (result == _expect.toString);

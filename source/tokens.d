@@ -58,14 +58,5 @@ package class Tokens {
             return null;
         }
     }
-
-    override string toString() {
-        string result = "[";
-        result ~= join(_list, ", ");
-        return result ~= "]";
-    }
-    size_t length() {
-        return _list.length;
-    }
 }
 

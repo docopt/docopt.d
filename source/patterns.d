@@ -45,46 +45,14 @@ package abstract class Pattern {
         return typeid(this).getHash(&this);
     }
 
-    override string toString() {
-        return "Pattern";
-    }
-
-    Pattern[] children() {
-        return null;
-    }
-
-    const string name() {
-        writeln("should never reach Pattern::name");
-        return null;
-    }
-
-    ArgValue value() {
-        writeln("should never reach Pattern::value");
-        return null;
-    }
-
-    void setName(string name) {
-        writeln("should never reach Pattern::setName");
-    }
-
-    void setValue(ArgValue value) {
-        writeln("should never reach Pattern::setValue");
-    }
-
-    void setChildren(Pattern[] children) {
-        writeln("should never reach Pattern::dup");
-        assert(false);
-    }
-
-    Pattern[] flat(string[] types = null) {
-        writeln("should never reach Pattern::flat");
-        assert(false);
-    }
-
-    bool match(ref Pattern[] left, ref Pattern[] collected) {
-        writeln("should never reach Pattern::match");
-        assert(false);
-    }
+    abstract Pattern[] children();
+    abstract void setChildren(Pattern[] children);
+    abstract string name() const;
+    abstract void setName(string name);
+    abstract ArgValue value();
+    abstract void setValue(ArgValue value);
+    abstract Pattern[] flat(string[] types = null);
+    abstract bool match(ref Pattern[] left, ref Pattern[] collected);
 
     Pattern fix() {
         fixIdentities();
@@ -93,7 +61,7 @@ package abstract class Pattern {
     }
 
     // make pattern-tree tips point to same object if they are equal
-    Pattern fixIdentities(Pattern[] uniq = []) {
+    private Pattern fixIdentities(Pattern[] uniq = []) {
         if (uniq.length == 0) {
             foreach(pattern; flat()) {
                 if (find(uniq, pattern) == []) {
@@ -113,7 +81,7 @@ package abstract class Pattern {
         return this;
     }
 
-    Pattern fixRepeatingArguments() {
+    private Pattern fixRepeatingArguments() {
         Pattern[][] either;
         foreach(i, child; transform(this).children()) {
             if (child.children !is null) {
@@ -207,7 +175,7 @@ package class LeafPattern : Pattern {
         _value = value;
     }
 
-    override const string name() {
+    override string name() const {
         return _name;
     }
 
@@ -295,9 +263,15 @@ package class LeafPattern : Pattern {
         return true;
     }
 
-    Pattern singleMatch(Pattern[] left, ref uint pos) {
+    abstract Pattern singleMatch(Pattern[] left, ref uint pos);
+
+    // not used in LeafPatterns
+    override Pattern[] children() {
         return null;
     }
+    override void setChildren(Pattern[] children) {
+    }
+
 }
 
 package class Option : LeafPattern {
@@ -327,18 +301,6 @@ package class Option : LeafPattern {
         } else {
             return _shortArg;
         }
-    }
-
-    override ArgValue value() {
-        return _value;
-    }
-
-    override void setName(string name) {
-        _name = name;
-    }
-
-    override void setValue(ArgValue value) {
-        _value = value;
     }
 
     override string toString() {
@@ -417,6 +379,18 @@ package class BranchPattern : Pattern {
             res ~= child.flat(types);
         }
         return res;
+    }
+
+    // not used in BranchPatterns
+    override string name() const {
+        return "branch";
+    }
+    override void setName(string name) {
+    }
+    override ArgValue value() const {
+        return null;
+    }
+    override void setValue(ArgValue value) {
     }
 }
 

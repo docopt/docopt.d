@@ -17,6 +17,7 @@ import std.traits;
 import std.ascii;
 import std.conv;
 import std.c.stdlib;
+import std.json;
 
 import argvalue;
 import patterns;
@@ -344,7 +345,7 @@ private Pattern[] parseArgv(Tokens tokens, ref Option[] options, bool optionsFir
 private void extras(bool help, string vers, Pattern[] args) {
     if (help) {
         foreach(opt; args) {
-            if ( (opt.name == "-h" || opt.name == "--help") && opt.value !is null) {
+            if ( (opt.name == "-h" || opt.name == "--help") && opt.value) {
                 throw new DocoptExitHelp("help");
             }
         }
@@ -370,7 +371,7 @@ Pattern[] subsetOptions(Option[] docOptions, Pattern[] patternOptions) {
 }
 
 public ArgValue[string] parse(string doc, string[] argv,
-                               bool help = false,
+                               bool help = true,
                                string vers = null,
                                bool optionsFirst = false) {
     ArgValue[string] dict;
@@ -394,8 +395,8 @@ public ArgValue[string] parse(string doc, string[] argv,
         throw new DocoptLanguageError(e.msg);
     }
 
-    //writeln(options);
-    //writeln(pattern);
+    //writeln("options ", options);
+    //writeln("pattern ", pattern);
 
     Pattern[] args;
     try {
@@ -411,10 +412,16 @@ public ArgValue[string] parse(string doc, string[] argv,
         shortcut.setChildren(subsetOptions(docOptions, patternOptions));
     }
 
+    //writeln("patternOptions ", patternOptions);
+    //writeln("args ", args);
+
     extras(help, vers, args);
 
     Pattern[] collected;
     bool match = pattern.fix().match(args, collected);
+
+    //writeln("match ", match);
+    //writeln("args ", args);
 
     if (match && args.length == 0) {
         auto fin = pattern.flat() ~ collected;
@@ -437,7 +444,7 @@ public ArgValue[string] parse(string doc, string[] argv,
 }
 
 public ArgValue[string] docopt(string doc, string[] argv,
-                               bool help = false,
+                               bool help = true,
                                string vers = null,
                                bool optionsFirst = false)
 {
@@ -460,12 +467,52 @@ public ArgValue[string] docopt(string doc, string[] argv,
     assert(0);
 }
 
+private string prettyArgValue(ArgValue[string] dict) {
+    string ret = "{";
+    bool first = true;
+    foreach(key, val; dict) {
+        if (first)
+            first = false;
+        else
+            ret ~= ",";
+
+        ret ~= format("\"%s\"", key);
+        ret ~= ":";
+        if (val.isBool) {
+            ret ~= val.toString;
+        } else if (val.isInt) {
+            ret ~= val.toString;
+        } else if (val.isNull) {
+            ret ~= "null";
+        } else if (val.isList) {
+            ret ~= "[";
+            bool firstList = true;
+            foreach(str; val.asList) {
+                if (firstList)
+                    firstList = false;
+                else
+                    ret ~= ",";
+                ret ~= format("\"%s\"", str);
+            }
+            ret ~= "]";
+        } else {
+            ret ~= format("\"%s\"", val.toString);
+        }
+    }
+    ret ~= "}";
+    return ret;
+}
+
+public string prettyPrintArgs(ArgValue[string] args) {
+    JSONValue result = parseJSON(prettyArgValue(args));
+    return result.toPrettyString;
+}
+
 version(unittest)
 {
     Tokens TS(string toks, bool parsingArgv = true) {
         return new Tokens(toks, parsingArgv);
     }
-
 }
 
 unittest {
