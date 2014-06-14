@@ -15,6 +15,8 @@ Project("{002A2DE9-8BB6-484D-9802-7E4AD4084715}") = "test_docopt", "test_docopt\
 		{BD5AC864-7974-4CB8-A041-AB84D0320137} = {BD5AC864-7974-4CB8-A041-AB84D0320137}
 	EndProjectSection
 EndProject
+Project("{002A2DE9-8BB6-484D-9802-7E4AD4084715}") = "naval_fate", "naval_fate\naval_fate.visualdproj", "{A41E1B91-97E8-4ED7-BFA4-ED763DAE7726}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -33,6 +35,10 @@ Global
 		{1C6E31B3-EEE7-4D5F-9CB0-D086496DAB92}.Debug|Win32.Build.0 = Debug|Win32
 		{1C6E31B3-EEE7-4D5F-9CB0-D086496DAB92}.Release|Win32.ActiveCfg = Release|Win32
 		{1C6E31B3-EEE7-4D5F-9CB0-D086496DAB92}.Release|Win32.Build.0 = Release|Win32
+		{A41E1B91-97E8-4ED7-BFA4-ED763DAE7726}.Debug|Win32.ActiveCfg = Debug|Win32
+		{A41E1B91-97E8-4ED7-BFA4-ED763DAE7726}.Debug|Win32.Build.0 = Debug|Win32
+		{A41E1B91-97E8-4ED7-BFA4-ED763DAE7726}.Release|Win32.ActiveCfg = Release|Win32
+		{A41E1B91-97E8-4ED7-BFA4-ED763DAE7726}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
