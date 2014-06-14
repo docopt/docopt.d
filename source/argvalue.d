@@ -45,37 +45,29 @@ public class ArgValue
         _value = val;
 	}
 
-	protected this(Variant val) {
-        _value = val;
-	}
-
-    const ArgValue dup() {
-        return new ArgValue(_value);
-    }
-
-    bool isNull() {
+    bool isNull() const {
         return (_value == null);
     }
 
-	bool isBool() {
+	bool isBool() const {
 		return (_value.type == typeid(bool));
 	}
 
-    bool isFalse() {
+    bool isFalse() const {
         if (isBool) {
             return (*_value.peek!(bool) == false);
         }
         return false;
     }
 
-    bool isTrue() {
+    bool isTrue() const {
         if (isBool) {
             return (*_value.peek!(bool) == true);
         }
         return false;
     }
 
-    bool isInt() {
+    bool isInt() const {
 		return (_value.type == typeid(int));
     }
 
@@ -86,7 +78,7 @@ public class ArgValue
         return int.max;
     }
 
-    bool isString() {
+    bool isString() const {
 		return (_value.type == typeid(char[]));
     }
 
@@ -108,11 +100,11 @@ public class ArgValue
         }
     }
 
-	bool isList() {
+	bool isList() const {
         return (_value.type == typeid(string[]));
     }
 
-	bool isEmpty() {
+	bool isEmpty() const {
 		if (isList) {
 			return (_value.peek!(string[]).length == 0);
 		}
@@ -189,4 +181,7 @@ unittest {
     string[] temp;
     ArgValue emptyList = new ArgValue(temp);
     assert(emptyList.isList);
+
+    ArgValue nullVal = new ArgValue();
+    assert(nullVal.isNull);
 }

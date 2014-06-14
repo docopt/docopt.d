@@ -192,9 +192,9 @@ package class LeafPattern : Pattern {
     string _name = null;
     ArgValue _value = null;
 
-    this(in string name, in ArgValue value = new ArgValue()) {
+    this(in string name, ArgValue value = new ArgValue()) {
         _name = name.dup;
-        _value = value.dup;
+        _value = value;
     }
 
     override const string name() {
@@ -211,7 +211,7 @@ package class LeafPattern : Pattern {
 
     override void setValue(ArgValue value) {
         if (value !is null) {
-            _value = value.dup;
+            _value = value;
         } else {
             _value = null;
         }
@@ -251,7 +251,7 @@ package class LeafPattern : Pattern {
                 if (sameName.length == 0) {
                     match.setValue(new ArgValue(increment));
                     collected ~= match;
-                    left = left;
+                    left = left_;
                     return true;
                 } else {
                     sameName[0].value.add(increment);
@@ -295,7 +295,7 @@ package class Option : LeafPattern {
     string _longArg;
     uint _argCount;
 
-    this(in string s, in string l, in uint ac=0, in ArgValue v = new ArgValue(false) ) {
+    this(in string s, in string l, in uint ac=0, ArgValue v = new ArgValue(false) ) {
         if (l != null) {
             super(l, v);
         } else {
@@ -304,7 +304,11 @@ package class Option : LeafPattern {
         _shortArg = s.dup;
         _longArg = l.dup;
         _argCount = ac;
-        _value = v.dup;
+        if (v.isFalse && ac>0) {
+            _value = new ArgValue();
+        } else {
+            _value = v;
+        }
     }
 
     override const string name() {
@@ -337,7 +341,11 @@ package class Option : LeafPattern {
             l = format("'%s'", _longArg);
         }
 
-        return format("Option(%s, %s, %s, %s)", s, l, _argCount, _value);
+        if (_value.isNull) {
+            return format("Option(%s, %s, %s, null)", s, l, _argCount);
+        } else {
+            return format("Option(%s, %s, %s, %s)", s, l, _argCount, _value);
+        }
     }
 
     string toSimpleString() {
@@ -670,11 +678,15 @@ protected Option parseOption(string optionDescription) {
         auto match = matchAll(description, pat);
         if (!match.empty()) {
             value = match.captures[1];
+        } else {
+            value = null;
         }
     }
 
     if (value == "false") {
         return new Option(shortArg, longArg, argCount, new ArgValue(false));
+    } else if (value is null) {
+        return new Option(shortArg, longArg, argCount, new ArgValue());
     } else {
         return new Option(shortArg, longArg, argCount, new ArgValue(value));
     }

@@ -21,6 +21,8 @@ string prettyArgValue(docopt.ArgValue[string] dict) {
         ret ~= ":";
         if (val.isBool) {
             ret ~= val.toString;
+        } else if (val.isInt) {
+            ret ~= val.toString;
         } else if (val.isNull) {
             ret ~= "null";
         } else if (val.isList) {
@@ -60,7 +62,6 @@ class DocoptTestItem {
         string result;
         try {
            docopt.ArgValue[string] temp = docopt.parse(_doc, _argv);
-           writeln("temp ", temp);
            result = prettyArgValue(temp);
         } catch (DocoptArgumentError e) {
             result = "\"user-error\""; // parseJSON("user-error");
