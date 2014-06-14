@@ -416,8 +416,12 @@ public ArgValue[string] parse(string doc, string[] argv,
     } 
     
     if (match) {
-        // need prettier msg
-        throw new DocoptArgumentError(format("Unexpected arguments: %s", match));
+        string[] unexpected;
+        foreach(arg; args) {
+            unexpected ~= arg.name;
+        }
+        string msg = join(unexpected, ", ");
+        throw new DocoptArgumentError(format("Unexpected arguments: %s", msg));
     }
 
     throw new DocoptArgumentError("Arguments did not match");
