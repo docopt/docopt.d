@@ -23,10 +23,10 @@ arguments: $(DOCOPTLIB) examples/arguments/source/arguments.d
 	dmd $(DFLAGS) examples/arguments/source/arguments.d -op $(DMDLINK)
 
 clean:
-	rm -rf test/test_docopt test/test_docopt.o
-	rm -rf lib*a
-	rm -rf __test__library__
-	rm -rf arguments
-	find . -name "*.o" -exec rm {} \;
+	@rm -rf test/test_docopt test/test_docopt.o
+	@rm -rf lib*a
+	@rm -rf __test__library__
+	@rm -rf arguments
+	@find . -name "*.o" -exec rm {} \;
 
 .PHONY: test
