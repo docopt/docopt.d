@@ -446,7 +446,7 @@ package class Argument : LeafPattern {
     }
 
     override Pattern singleMatch(Pattern[] left, ref uint pos) {
-        foreach(i, pattern; left) {
+        foreach(uint i, pattern; left) {
             if (typeid(pattern) == typeid(Argument)) {
                 pos = i;
                 return new Argument(name, pattern.value);
@@ -474,7 +474,7 @@ package class Command : Argument {
         super(source, new ArgValue(false));
     }
     override Pattern singleMatch(Pattern[] left, ref uint pos) {
-        foreach(i, pattern; left) {
+        foreach(uint i, pattern; left) {
             if (typeid(pattern) == typeid(Argument)) {
                 if (pattern.value.toString == name) {
                     pos = i;
@@ -629,7 +629,7 @@ package class Either : BranchPattern {
             }
         }
         if (outcomes.length > 0) {
-            auto minLeft = uint.max;
+            auto minLeft = ulong.max;
             foreach (m; outcomes) {
                 if (m.left.length < minLeft) {
                     minLeft = m.left.length;

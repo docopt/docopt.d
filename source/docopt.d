@@ -384,7 +384,7 @@ public ArgValue[string] parse(string doc, string[] argv,
         throw new DocoptLanguageError(e.msg);
     }
 
-    writeln(options);
+    //writeln(options);
 
     Pattern[] args;
     try {
