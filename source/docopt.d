@@ -433,8 +433,7 @@ public ArgValue[string] parse(string doc, string[] argv,
         throw new DocoptArgumentError(format("Unexpected arguments: %s", msg));
     }
 
-    throw new DocoptArgumentError("Arguments did not match");
-    assert(0);
+    throw new DocoptArgumentError(usageMsg);
 }
 
 public ArgValue[string] docopt(string doc, string[] argv,
@@ -456,8 +455,6 @@ public ArgValue[string] docopt(string doc, string[] argv,
         exit(-1);
     } catch(DocoptArgumentError e) {
         writeln(e.msg);
-        writeln();
-        writeln(doc);
         exit(-1);
     }
     assert(0);
