@@ -1,6 +1,7 @@
 import std.stdio;
-import std.string;
 import std.regex;
+import std.array;
+import std.string;
 import std.algorithm;
 import std.file;
 import std.path;
@@ -44,6 +45,32 @@ string prettyArgValue(docopt.ArgValue[string] dict) {
     return ret;
 }
 
+string sortedJSON(string input) {
+    string[] parts = split(input, "\n");
+    if (parts.length == 1) {
+        return parts[0];
+    } else {
+        string[] res;
+        foreach(ref p; sort(parts[1..$-1])) {
+            string temp = strip(replace(p, ",", ""));
+            if (temp.length > 0) {
+                res ~= temp;
+            }
+        }
+        return join(res, "|");
+    }
+    return "D";
+}
+
+bool compareJSON(JSONValue expect, JSONValue result) {
+    string strE = sortedJSON(expect.toPrettyString);
+    string strR = sortedJSON(result.toPrettyString);
+    if (strE == strR) {
+        return true;
+    } 
+    return false;
+}
+
 class DocoptTestItem {
     private string _doc;
     private uint _index;
@@ -72,13 +99,13 @@ class DocoptTestItem {
         }
         JSONValue _result = parseJSON(result);
 
-        if (_expect.toPrettyString == _result.toPrettyString) {
+        if (compareJSON(_expect, _result)) {
             return true;
         } else {
             writeln(_index);
             writeln(_doc);
             writeln(format("expect: %s\nresult: %s", 
-                           _expect.toPrettyString, _result.toPrettyString));
+                           _expect, _result));
             return false;
         }
     }
