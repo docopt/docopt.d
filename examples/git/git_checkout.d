@@ -25,6 +25,6 @@ options:
 ";
 
 int main(string[] argv) {
-    writeln(prettyPrintArgs(docopt.docopt(doc, argv[1..$], false)));
+    writeln(prettyPrintArgs(docopt.docopt(doc, argv[1..$])));
     return 0;
 }
