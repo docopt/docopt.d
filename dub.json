@@ -1,11 +1,13 @@
 {
-	"name": "docopt",
-	"description": "docopt implementation in D",
-	"copyright": "Copyright © 2014, Bob Tolbert",
-	"authors": ["Bob Tolbert"],
+    "name": "docopt",
+    "description": "docopt implementation in D",
+    "copyright": "Copyright (c) 2014, Bob Tolbert",
+    "homepage": "https://github.com/rwtolbert/docopt.d",
+    "authors": ["Bob Tolbert"],
+    "license": "MIT",
     "sourcePaths": ["source"],
     "importPaths": ["source"],
     "targetType": "library",
-	"dependencies": {
-	}
+    "dependencies": {
+    }
 }
