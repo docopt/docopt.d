@@ -559,14 +559,14 @@ prog is a program.
     correct ~= new Argument(null, new ArgValue("arg"));
     assert(parseArgv(TS("-h --file f.txt arg"), o) == correct);
 
-    correct.clear();
+    correct.destroy();
     correct ~= new Option("-h", null, 0, new ArgValue(true));
     correct ~= new Option("-f", "--file", 1, new ArgValue("f.txt"));
     correct ~= new Argument(null, new ArgValue("arg"));
     correct ~= new Argument(null, new ArgValue("arg2"));
     assert(parseArgv(TS("-h --file f.txt arg arg2"), o) == correct);
 
-    correct.clear();
+    correct.destroy();
     correct ~= new Option("-h", null, 0, new ArgValue(true));
     correct ~= new Argument(null, new ArgValue("arg"));
     correct ~= new Argument(null, new ArgValue("--"));
@@ -630,30 +630,30 @@ prog is a program.
     assert(pat == finalPat);
     assert(coll == finalColl);
 
-    pat.clear();
-    coll.clear();
-    finalPat.clear();
-    finalColl.clear();
+    pat.destroy();
+    coll.destroy();
+    finalPat.destroy();
+    finalColl.destroy();
     pat ~= new Option("-x", null);
     finalPat ~= new Option("-x", null);
     assert(testA.match(pat, coll) == false);
     assert(pat == finalPat);
     assert(coll == finalColl);
 
-    pat.clear();
-    coll.clear();
-    finalPat.clear();
-    finalColl.clear();
+    pat.destroy();
+    coll.destroy();
+    finalPat.destroy();
+    finalColl.destroy();
     pat ~= new Argument("N");
     finalPat ~= new Argument("N");
     assert(testA.match(pat, coll) == false);
     assert(pat == finalPat);
     assert(coll == finalColl);
 
-    pat.clear();
-    coll.clear();
-    finalPat.clear();
-    finalColl.clear();
+    pat.destroy();
+    coll.destroy();
+    finalPat.destroy();
+    finalColl.destroy();
     pat ~= new Option("-x", null);
     pat ~= new Option("-a", null);
     pat ~= new Argument("N");
@@ -664,10 +664,10 @@ prog is a program.
     assert(pat == finalPat);
     assert(coll == finalColl);
 
-    pat.clear();
-    coll.clear();
-    finalPat.clear();
-    finalColl.clear();
+    pat.destroy();
+    coll.destroy();
+    finalPat.destroy();
+    finalColl.destroy();
     pat ~= new Option("-a", null, 0, new ArgValue(true));
     pat ~= new Option("-a", null);
     finalPat ~= new Option("-a", null);
@@ -678,10 +678,10 @@ prog is a program.
 
     // argument match
     Argument testArg = new Argument("N", new ArgValue());
-    pat.clear();
-    coll.clear();
-    finalPat.clear();
-    finalColl.clear();
+    pat.destroy();
+    coll.destroy();
+    finalPat.destroy();
+    finalColl.destroy();
     pat ~= new Argument(null, new ArgValue(9));
     finalColl ~= new Argument("N", new ArgValue(9));
     assert(testArg.match(pat, coll));
@@ -698,30 +698,30 @@ prog is a program.
     // command match
 
     Command testC = new Command("c");
-    pat.clear();
-    coll.clear();
-    finalPat.clear();
-    finalColl.clear();
+    pat.destroy();
+    coll.destroy();
+    finalPat.destroy();
+    finalColl.destroy();
     pat ~= new Argument(null, new ArgValue("c"));
     finalColl ~= new Command("c", new ArgValue(true));
     assert(testC.match(pat, coll));
     assert(pat == finalPat);
     assert(coll == finalColl);
 
-    pat.clear();
-    coll.clear();
-    finalPat.clear();
-    finalColl.clear();
+    pat.destroy();
+    coll.destroy();
+    finalPat.destroy();
+    finalColl.destroy();
     pat ~= new Option("-x", null);
     finalPat ~= new Option("-x", null);
     assert(testC.match(pat, coll) == false);
     assert(pat == finalPat);
     assert(coll == finalColl);
 
-    pat.clear();
-    coll.clear();
-    finalPat.clear();
-    finalColl.clear();
+    pat.destroy();
+    coll.destroy();
+    finalPat.destroy();
+    finalColl.destroy();
     pat ~= new Option("-x", null);
     pat ~= new Option("-a", null);
     pat ~= new Argument(null, new ArgValue("c"));
@@ -732,10 +732,10 @@ prog is a program.
     assert(pat == finalPat);
     assert(coll == finalColl);
 
-    pat.clear();
-    coll.clear();
-    finalPat.clear();
-    finalColl.clear();
+    pat.destroy();
+    coll.destroy();
+    finalPat.destroy();
+    finalColl.destroy();
     pat ~= new Argument(null, new ArgValue("rm"));
     finalColl ~= new Command("rm", new ArgValue(true));
     Pattern testE = new Either([new Command("add", new ArgValue(false)),
@@ -746,10 +746,10 @@ prog is a program.
 
     // test optional match
     Optional testOptA = new Optional(new Option("-a", null));
-    pat.clear();
-    coll.clear();
-    finalPat.clear();
-    finalColl.clear();
+    pat.destroy();
+    coll.destroy();
+    finalPat.destroy();
+    finalColl.destroy();
     pat ~= new Option("-a", null);
     finalColl ~= new Option("-a", null);
     assert(testOptA.match(pat, coll));
