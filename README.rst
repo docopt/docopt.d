@@ -377,4 +377,5 @@ are encouraged to specify explicitly the version in your dependency
 tools, e.g.::
 
 
-- 0.6.1 Initial release in D.
+- 0.6.1-b.1 Initial release in D.
+- 0.6.1-b.2 Updates for D 2.067

@@ -1,5 +1,5 @@
 //  D command-line interface parser that will make you smile.
-//  Copyright (c) 2014 Bob Tolbert, bob@tolbert.org
+//  Copyright (c) 2014, 2015 Bob Tolbert, bob@tolbert.org
 //  Licensed under terms of MIT license (see LICENSE-MIT)
 //
 //  https://github.com/rwtolbert/docopt.d
@@ -42,7 +42,7 @@ package abstract class Pattern {
     }
 
     override size_t toHash() {
-        return typeid(this).getHash(&this);
+        return typeid(this).toHash;
     }
 
     abstract Pattern[] children();

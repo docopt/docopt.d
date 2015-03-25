@@ -1,7 +1,7 @@
 {
 	"name": "docopt",
 	"description": "docopt implementation in D",
-	"copyright": "Copyright © 2014, Bob Tolbert",
+	"copyright": "Copyright © 2014-2015, Bob Tolbert",
 	"authors": ["Bob Tolbert"],
     "sourcePaths": ["source"],
     "importPaths": ["source"],
