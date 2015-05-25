@@ -379,3 +379,4 @@ tools, e.g.::
 
 - 0.6.1-b.1 Initial release in D.
 - 0.6.1-b.2 Updates for D 2.067
+- 0.6.1-b.3 Updates for D 2.067.1, gdc and ldc2
