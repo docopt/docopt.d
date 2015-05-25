@@ -36,12 +36,11 @@ string sortedJSON(string input) {
         }
         return join(res, "|");
     }
-//    return "D";
 }
 
 bool compareJSON(JSONValue expect, JSONValue result) {
-    string strE = sortedJSON(expect.toPrettyString);
-    string strR = sortedJSON(result.toPrettyString);
+    string strE = sortedJSON(toJSON(&expect, true));
+    string strR = sortedJSON(toJSON(&result, true));
     if (strE == strR) {
         return true;
     } 
@@ -75,7 +74,7 @@ class DocoptTestItem {
             //writeln(result);
         } catch (DocoptArgumentError e) {
             result = "\"user-error\"";
-            return (result == _expect.toString);
+            return (result == toJSON(&_expect));
         } catch (Exception e) {
             writeln(e);
             return false;
@@ -105,7 +104,7 @@ DocoptTestItem[] splitTestCases(string raw) {
         auto parts = fixture.split("\"\"\"");
         if (parts.length == 2) {
             auto doc = parts[0];
-            foreach(testcase; parts[1].split('$')[1..$]) {
+            foreach(testcase; parts[1].split("$")[1..$]) {
                 auto argv_parts = strip(testcase).split("\n");
                 auto expect = parseJSON(join(argv_parts[1..$], "\n"));
                 auto prog_parts = argv_parts[0].split();
@@ -125,7 +124,7 @@ DocoptTestItem[] splitTestCases(string raw) {
 auto raw = readText("test/testcases.docopt");
 
 auto testcases = splitTestCases(raw);
-uint passed[];
+uint[] passed;
 foreach(uint i, test; testcases) {
     if (test.runTest()) {
         passed ~= i;

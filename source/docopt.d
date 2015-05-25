@@ -307,7 +307,7 @@ private Pattern[] parseAtom(Tokens tokens, ref Option[] options) {
         return [new OptionsShortcut()];
     } else if (startsWith(token, "--") && token != "--") {
         return parseLong(tokens, options);
-    } else if (startsWith(token, "-") && !canFind(token, "--")) {
+    } else if (startsWith(token, "-") && token != "-" && token != "--") {
         return parseShort(tokens, options);
     } else if ((startsWith(token, "<") && endsWith(token, ">")) || isUpperString(token)) {
         return [new Argument(tokens.move(), new ArgValue())];
@@ -506,7 +506,7 @@ private string prettyArgValue(ArgValue[string] dict) {
 
 public string prettyPrintArgs(ArgValue[string] args) {
     JSONValue result = parseJSON(prettyArgValue(args));
-    return result.toString;
+    return toJSON(&result, true);
 }
 
 version(unittest)
