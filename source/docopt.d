@@ -56,7 +56,7 @@ class DocoptExitVersion : Exception {
 private Option[] parseDefaults(string doc) {
     Option[] defaults;
     foreach(sect; parseSection("options:", doc)) {
-        auto s = sect[indexOf(sect, ":")+1..$];
+        auto s = sect[std.string.indexOf(sect, ":")+1..$];
         auto pat = regex(r"\n[ \t]*(-\S+?)");
         auto parts = split("\n"~s, pat)[1..$];
         auto match = array(matchAll("\n"~s, pat));
@@ -81,7 +81,7 @@ private string[] parseSection(string name, string doc) {
 }
 
 private string formalUsage(string section) {
-    auto s = section[indexOf(section, ":")+1..$];
+    auto s = section[std.string.indexOf(section, ":")+1..$];
     auto parts = split(s);
     string[] subs;
     foreach(part; parts[1..$]) {
@@ -261,7 +261,8 @@ private Pattern[] parseExpr(Tokens tokens, ref Option[] options) {
 
 private Pattern[] parseSeq(Tokens tokens, ref Option[] options) {
     Pattern[] result;
-    while (!tokens.current().among("", "]", ")", "|")) {
+    string seps = "])|";
+    while (!canFind(seps, tokens.current())) {
         Pattern[] atom = parseAtom(tokens, options);
         if (tokens.current() == "...") {
             atom = [new OneOrMore(atom)];
@@ -306,7 +307,7 @@ private Pattern[] parseAtom(Tokens tokens, ref Option[] options) {
         return [new OptionsShortcut()];
     } else if (startsWith(token, "--") && token != "--") {
         return parseLong(tokens, options);
-    } else if (startsWith(token, "-") && !token.among("-", "--")) {
+    } else if (startsWith(token, "-") && !canFind(token, "--")) {
         return parseShort(tokens, options);
     } else if ((startsWith(token, "<") && endsWith(token, ">")) || isUpperString(token)) {
         return [new Argument(tokens.move(), new ArgValue())];
@@ -505,7 +506,7 @@ private string prettyArgValue(ArgValue[string] dict) {
 
 public string prettyPrintArgs(ArgValue[string] args) {
     JSONValue result = parseJSON(prettyArgValue(args));
-    return result.toPrettyString;
+    return result.toString;
 }
 
 version(unittest)
