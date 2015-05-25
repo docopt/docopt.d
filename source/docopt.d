@@ -517,8 +517,6 @@ version(unittest)
 
 unittest {
 
-    writeln("hello, docopt testing");
-
     // Commands
     ArgValue[string] empty;
     assert(docopt("Usage: prog", []) == empty);
