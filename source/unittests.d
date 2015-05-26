@@ -120,54 +120,28 @@ DocoptTestItem[] splitTestCases(string raw) {
     return testcases;
 }
 
+string testfile = "test/testcases.docopt";
 
-auto raw = readText("test/testcases.docopt");
-
-auto testcases = splitTestCases(raw);
-uint[] passed;
-foreach(uint i, test; testcases) {
-    if (test.runTest()) {
-        passed ~= i;
-    } else {
-        writeln(i, " failed");
-        writeln(test.doc);
-        writeln();
+if (std.file.exists(testfile)) {
+    auto raw = readText(testfile);
+    
+    auto testcases = splitTestCases(raw);
+    uint[] passed;
+    foreach(uint i, test; testcases) {
+        if (test.runTest()) {
+            passed ~= i;
+        } else {
+            writeln(i, " failed");
+            writeln(test.doc);
+            writeln();
+        }
     }
+
+    writeln(format("%d passed of %d run : %.1f%%", 
+                   passed.length, testcases.length,
+                   100.0*cast(float)passed.length/cast(float)testcases.length));
+
+    assert(passed.length == testcases.length);
 }
 
-
-
-writeln(format("%d passed of %d run : %.1f%%", 
-               passed.length, testcases.length,
-               100.0*cast(float)passed.length/cast(float)testcases.length));
-
-assert(passed.length == testcases.length);
-
 }
-
-// int main(string[] args) {
-
-//     if (args.length < 2) {
-//         writeln("usage: test_docopt <testfile>");
-//         return 1;
-//     }
-//     auto raw = readText(args[1]);
-
-//     auto testcases = splitTestCases(raw);
-//     uint passed[];
-//     foreach(uint i, test; testcases) {
-//         if (test.runTest()) {
-//             passed ~= i;
-//         } else {
-//             writeln(i, "failed");
-//             writeln(test.doc);
-//             writeln();
-//         }
-//     }
-
-//     writeln(format("%d passed of %d run : %.1f%%", 
-//                    passed.length, testcases.length,
-//                    100.0*cast(float)passed.length/cast(float)testcases.length));
-
-//     return 0;
-// }
