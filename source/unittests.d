@@ -124,7 +124,7 @@ string testfile = "test/testcases.docopt";
 
 if (std.file.exists(testfile)) {
     auto raw = readText(testfile);
-    
+
     auto testcases = splitTestCases(raw);
     uint[] passed;
     foreach(uint i, test; testcases) {
@@ -136,11 +136,9 @@ if (std.file.exists(testfile)) {
             writeln();
         }
     }
-
-    writeln(format("%d passed of %d run : %.1f%%", 
+    writeln(format("%d passed of %d run : %.1f%%",
                    passed.length, testcases.length,
                    100.0*cast(float)passed.length/cast(float)testcases.length));
-
     assert(passed.length == testcases.length);
 }
 
