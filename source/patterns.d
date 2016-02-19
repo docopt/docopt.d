@@ -17,7 +17,7 @@ import std.container;
 import std.traits;
 import std.ascii;
 import std.conv;
-import std.c.stdlib;
+import core.stdc.stdlib;
 
 import argvalue;
 
