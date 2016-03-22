@@ -133,7 +133,7 @@ private Pattern[] parseLong(Tokens tokens, ref Option[] options) {
         options = options ~ o;
 
         if (tokens.isParsingArgv) {
-            if (value == null) {
+            if (value is null) {
                 o = new Option(null, longArg, argCount, new ArgValue(true));
             } else {
                 o = new Option(null, longArg, argCount, new ArgValue(value));
@@ -142,13 +142,13 @@ private Pattern[] parseLong(Tokens tokens, ref Option[] options) {
     } else {
         o = new Option(similar[0]._shortArg, similar[0]._longArg, similar[0]._argCount, similar[0]._value);
         if (o._argCount == 0) {
-            if (value != null) {
+            if (value !is null) {
                 auto msg = format("%s must not have an argument.", o._longArg); 
                 throw new TokensOptionError(msg);
             }
         } else {
-            if (value == null) {
-                if (tokens.current() == null || tokens.current() == "--") {
+            if (value is null) {
+                if (tokens.current() is null || tokens.current() == "--") {
                     auto msg = format("%s requires argument.", o._longArg);
                     throw new TokensOptionError(msg);
                 }
@@ -156,7 +156,7 @@ private Pattern[] parseLong(Tokens tokens, ref Option[] options) {
             }
         }
         if (tokens.isParsingArgv) {
-            if (value == null) {
+            if (value is null) {
                 o.setValue(new ArgValue(true));
             } else {
                 o.setValue(new ArgValue(value));
@@ -197,7 +197,7 @@ private Pattern[] parseShort(Tokens tokens, ref Option[] options) {
             string value = null;
             if (o._argCount != 0) {
                 if (left == "") {
-                    if (tokens.current == null || tokens.current == "--") {
+                    if (tokens.current is null || tokens.current == "--") {
                         string msg = format("%s requires an argument", shortArg);
                         throw new TokensOptionError(msg);
                     }
@@ -208,7 +208,7 @@ private Pattern[] parseShort(Tokens tokens, ref Option[] options) {
                 }
             }
             if (tokens.isParsingArgv) {
-                if (value == null) {
+                if (value is null) {
                     o.setValue(new ArgValue(true));
                 } else {
                     o.setValue(new ArgValue(value));
@@ -224,7 +224,7 @@ private Pattern[] parseShort(Tokens tokens, ref Option[] options) {
 private Pattern parsePattern(string source, ref Option[] options) {
     auto tokens = new Tokens(source, false);
     Pattern[] result = parseExpr(tokens, options);
-    if (tokens.current() != null) {
+    if (tokens.current() !is null) {
         string msg = format("unexpected ending: %s", tokens.toString());
         throw new DocoptLanguageError(msg);
     }
@@ -351,7 +351,7 @@ private void extras(bool help, string vers, Pattern[] args) {
             }
         }
     }
-    if (vers != null) {
+    if (vers !is null) {
         foreach(opt; args) {
             if ( opt.name == "--version" && opt.value !is null) {
                 throw new DocoptExitVersion("version");
