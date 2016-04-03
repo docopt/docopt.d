@@ -1,6 +1,7 @@
 ``docopt`` creates *beautiful* command-line interfaces
 ======================================================================
 
+.. image:: https://travis-ci.org/rwtolbert/docopt.d.svg?branch=master
 
 You know what's awesome?  It's when the option parser *is*
 generated based on the beautiful help message that you write yourself!
