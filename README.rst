@@ -1,6 +1,7 @@
 ``docopt`` creates *beautiful* command-line interfaces
 ======================================================================
 
+.. image:: https://travis-ci.org/rwtolbert/docopt.d.svg?branch=master
 
 You know what's awesome?  It's when the option parser *is*
 generated based on the beautiful help message that you write yourself!
@@ -381,4 +382,3 @@ tools, e.g.::
 - 0.6.1-b.2 Updates for D 2.067
 - 0.6.1-b.3 Updates for D 2.067.1, gdc and ldc2
 - 0.6.1-b.5 Updates for D 2.070
-- 0.6.1-b.6 Updates for Travis-CI
