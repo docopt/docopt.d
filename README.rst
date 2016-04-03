@@ -381,3 +381,4 @@ tools, e.g.::
 - 0.6.1-b.2 Updates for D 2.067
 - 0.6.1-b.3 Updates for D 2.067.1, gdc and ldc2
 - 0.6.1-b.5 Updates for D 2.070
+- 0.6.1-b.6 Updates for Travis-CI
