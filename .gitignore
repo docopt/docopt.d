@@ -12,3 +12,4 @@ test/test_docopt
 test/test_docopt.o
 README.html
 git*
+dub.selections.json
