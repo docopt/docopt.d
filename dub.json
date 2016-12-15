@@ -7,7 +7,5 @@
     "license": "MIT",
     "sourcePaths": ["source"],
     "importPaths": ["source"],
-    "targetType": "library",
-    "dependencies": {
-    }
+    "targetType": "library"
 }
