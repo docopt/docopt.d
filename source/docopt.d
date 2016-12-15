@@ -506,7 +506,7 @@ private string prettyArgValue(ArgValue[string] dict) {
 
 public string prettyPrintArgs(ArgValue[string] args) {
     JSONValue result = parseJSON(prettyArgValue(args));
-    return result.toString;
+    return result.toPrettyString;
 }
 
 version(unittest)

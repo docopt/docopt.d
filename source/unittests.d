@@ -39,8 +39,8 @@ string sortedJSON(string input) {
 }
 
 bool compareJSON(JSONValue expect, JSONValue result) {
-    string strE = sortedJSON(expect.toString);
-    string strR = sortedJSON(result.toString);
+    string strE = sortedJSON(expect.toPrettyString);
+    string strR = sortedJSON(result.toPrettyString);
     if (strE == strR) {
         return true;
     } 
@@ -74,7 +74,7 @@ class DocoptTestItem {
             //writeln(result);
         } catch (DocoptArgumentError e) {
             result = "\"user-error\"";
-            return (result == _expect.toString);
+            return (result == _expect.toPrettyString);
         } catch (Exception e) {
             writeln(e);
             return false;
