@@ -19,9 +19,9 @@ import std.conv;
 import core.stdc.stdlib;
 import std.json;
 
-import argvalue;
-import patterns;
-import tokens;
+private import argvalue;
+private import patterns;
+private import tokens;
 
 class DocoptLanguageError : Exception {
     this(string message, string file = __FILE__, size_t line = __LINE__) {
@@ -506,7 +506,7 @@ private string prettyArgValue(ArgValue[string] dict) {
 
 public string prettyPrintArgs(ArgValue[string] args) {
     JSONValue result = parseJSON(prettyArgValue(args));
-    return toJSON(&result, true);
+    return result.toPrettyString;
 }
 
 version(unittest)
@@ -517,7 +517,6 @@ version(unittest)
 }
 
 unittest {
-
     // Commands
     ArgValue[string] empty;
     assert(docopt("Usage: prog", []) == empty);

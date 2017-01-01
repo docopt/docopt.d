@@ -36,7 +36,7 @@ package struct PatternMatch {
     }
 }
 
-package abstract class Pattern {
+abstract class Pattern {
     override bool opEquals(Object rhs) {
        return (this.toString() == rhs.toString());
     }
@@ -166,7 +166,7 @@ private Pattern transform(Pattern pattern) {
 }
 
 
-package class LeafPattern : Pattern {
+class LeafPattern : Pattern {
     string _name = null;
     ArgValue _value = null;
 
@@ -274,7 +274,7 @@ package class LeafPattern : Pattern {
 
 }
 
-package class Option : LeafPattern {
+class Option : LeafPattern {
     string _shortArg;
     string _longArg;
     uint _argCount;
@@ -340,7 +340,7 @@ package class Option : LeafPattern {
     }
 }
 
-package class BranchPattern : Pattern {
+class BranchPattern : Pattern {
     Pattern[] _children;
 
     protected this() {
@@ -394,7 +394,7 @@ package class BranchPattern : Pattern {
     }
 }
 
-protected Pattern[] removeChild(Pattern[] arr, Pattern child) {
+Pattern[] removeChild(Pattern[] arr, Pattern child) {
     Pattern[] result;
     bool found = false;
     foreach(pat; arr) {
@@ -408,7 +408,7 @@ protected Pattern[] removeChild(Pattern[] arr, Pattern child) {
     return result;
 }
 
-package class Argument : LeafPattern {
+class Argument : LeafPattern {
     this(string name, ArgValue value) {
         super(name, value);
     }
@@ -450,7 +450,7 @@ package class Argument : LeafPattern {
     }
 }
 
-package class Command : Argument {
+class Command : Argument {
     this(string name, ArgValue value) {
         super(name, value);
     }
@@ -476,7 +476,7 @@ package class Command : Argument {
     }
 }
 
-package class Required : BranchPattern {
+class Required : BranchPattern {
     this(Pattern[] children) {
         super(children);
     }
@@ -506,7 +506,7 @@ package class Required : BranchPattern {
     }
 }
 
-package class Optional : BranchPattern {
+class Optional : BranchPattern {
     this(Pattern[] children) {
         super(children);
     }
@@ -528,7 +528,7 @@ package class Optional : BranchPattern {
     }
 }
 
-package class OptionsShortcut : Optional {
+class OptionsShortcut : Optional {
     this() {
         super([]);
     }
@@ -548,7 +548,7 @@ package class OptionsShortcut : Optional {
     }
 }
 
-package class OneOrMore : BranchPattern {
+class OneOrMore : BranchPattern {
     this(Pattern[] children) {
         super(children);
     }
@@ -591,7 +591,7 @@ package class OneOrMore : BranchPattern {
     }
 }
 
-package class Either : BranchPattern {
+class Either : BranchPattern {
     this(Pattern[] children) {
         super(children);
     }
@@ -633,7 +633,7 @@ package class Either : BranchPattern {
     }
 }
 
-protected Option parseOption(string optionDescription) {
+Option parseOption(string optionDescription) {
     string shortArg = null;
     string longArg = null;
     uint argCount = 0;
