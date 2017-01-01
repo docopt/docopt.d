@@ -53,7 +53,7 @@ class DocoptExitVersion : Exception {
     }
 }
 
-private patterns.Option[] parseDefaults(string doc) {
+private Option[] parseDefaults(string doc) {
     Option[] defaults;
     foreach(sect; parseSection("options:", doc)) {
         auto s = sect[std.string.indexOf(sect, ":")+1..$];
@@ -506,7 +506,7 @@ private string prettyArgValue(ArgValue[string] dict) {
 
 public string prettyPrintArgs(ArgValue[string] args) {
     JSONValue result = parseJSON(prettyArgValue(args));
-    return toJSON(result, true);
+    return toJSON(&result, true);
 }
 
 version(unittest)

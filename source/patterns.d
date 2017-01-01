@@ -36,7 +36,7 @@ package struct PatternMatch {
     }
 }
 
-public abstract class Pattern {
+package abstract class Pattern {
     override bool opEquals(Object rhs) {
        return (this.toString() == rhs.toString());
     }
@@ -274,7 +274,7 @@ package class LeafPattern : Pattern {
 
 }
 
-public class Option : LeafPattern {
+package class Option : LeafPattern {
     string _shortArg;
     string _longArg;
     uint _argCount;
@@ -394,7 +394,7 @@ package class BranchPattern : Pattern {
     }
 }
 
-public Pattern[] removeChild(Pattern[] arr, Pattern child) {
+protected Pattern[] removeChild(Pattern[] arr, Pattern child) {
     Pattern[] result;
     bool found = false;
     foreach(pat; arr) {
@@ -408,7 +408,7 @@ public Pattern[] removeChild(Pattern[] arr, Pattern child) {
     return result;
 }
 
-public class Argument : LeafPattern {
+package class Argument : LeafPattern {
     this(string name, ArgValue value) {
         super(name, value);
     }
@@ -450,7 +450,7 @@ public class Argument : LeafPattern {
     }
 }
 
-public class Command : Argument {
+package class Command : Argument {
     this(string name, ArgValue value) {
         super(name, value);
     }
@@ -476,7 +476,7 @@ public class Command : Argument {
     }
 }
 
-public class Required : BranchPattern {
+package class Required : BranchPattern {
     this(Pattern[] children) {
         super(children);
     }
@@ -506,7 +506,7 @@ public class Required : BranchPattern {
     }
 }
 
-public class Optional : BranchPattern {
+package class Optional : BranchPattern {
     this(Pattern[] children) {
         super(children);
     }
@@ -528,7 +528,7 @@ public class Optional : BranchPattern {
     }
 }
 
-public class OptionsShortcut : Optional {
+package class OptionsShortcut : Optional {
     this() {
         super([]);
     }
@@ -548,7 +548,7 @@ public class OptionsShortcut : Optional {
     }
 }
 
-public class OneOrMore : BranchPattern {
+package class OneOrMore : BranchPattern {
     this(Pattern[] children) {
         super(children);
     }
@@ -591,7 +591,7 @@ public class OneOrMore : BranchPattern {
     }
 }
 
-public class Either : BranchPattern {
+package class Either : BranchPattern {
     this(Pattern[] children) {
         super(children);
     }
@@ -633,7 +633,7 @@ public class Either : BranchPattern {
     }
 }
 
-public Option parseOption(string optionDescription) {
+protected Option parseOption(string optionDescription) {
     string shortArg = null;
     string longArg = null;
     uint argCount = 0;
