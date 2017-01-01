@@ -12,7 +12,7 @@ import std.string;
 import std.regex;
 import std.array;
 
-package class Tokens {
+public class Tokens {
     string[] _list;
     bool _isParsingArgv;
     this(string[] source, bool parsingArgv = true) {
